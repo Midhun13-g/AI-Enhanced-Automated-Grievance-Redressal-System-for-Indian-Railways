@@ -46,6 +46,9 @@ services:
     container_name: backend
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/railwaydb}
+      DB_USERNAME: ${DB_USERNAME:-railway}
+      DB_PASSWORD: ${DB_PASSWORD:-railwaypass}
     ports:
       - "8080:8080"
     depends_on:

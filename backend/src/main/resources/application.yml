@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/railwaydb
-    username: railway
-    password: railwaypass
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/railwaydb}
+    username: ${DB_USERNAME:railway}
+    password: ${DB_PASSWORD:railwaypass}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
