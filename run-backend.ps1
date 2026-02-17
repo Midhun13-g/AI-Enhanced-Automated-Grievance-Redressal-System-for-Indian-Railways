@@ -1,5 +1,5 @@
 # Set Render PostgreSQL credentials
-$env:DB_URL = "jdbc:postgresql://railway_v3pl_user:cWUU8smbe7Ig2jJwmIzju70neBnW7BCN@dpg-d6a35an5r7bs73fgs510-a:5432/railway_v3pl"
+$env:DB_URL = "jdbc:postgresql://dpg-d6a35an5r7bs73fgs510-a.oregon-postgres.render.com:5432/railway_v3pl"
 $env:DB_USERNAME = "railway_v3pl_user"
 $env:DB_PASSWORD = "cWUU8smbe7Ig2jJwmIzju70neBnW7BCN"
 $env:SPRING_PROFILES_ACTIVE = "render"
