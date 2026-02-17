@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 REM Set Render PostgreSQL credentials
-set DB_URL=postgresql://railway_v3pl_user:cWUU8smbe7Ig2jJwmIzju70neBnW7BCN@dpg-d6a35an5r7bs73fgs510-a/railway_v3pl
+set DB_URL=jdbc:postgresql://railway_v3pl_user:cWUU8smbe7Ig2jJwmIzju70neBnW7BCN@dpg-d6a35an5r7bs73fgs510-a:5432/railway_v3pl
 set DB_USERNAME=railway_v3pl_user
 set DB_PASSWORD=cWUU8smbe7Ig2jJwmIzju70neBnW7BCN
 set SPRING_PROFILES_ACTIVE=render

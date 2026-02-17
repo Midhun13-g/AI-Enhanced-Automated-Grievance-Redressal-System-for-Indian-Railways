@@ -27,8 +27,10 @@ Once your database is created, you'll see a credentials section showing:
 The **Internal Database URL** will look like:
 
 ```
-postgresql://railwaydb:your_password@dpg-xxxxx.render.com:5432/railway_db
+jdbc:postgresql://railwaydb:your_password@dpg-xxxxx.render.com:5432/railway_db
 ```
+
+⚠️ **Important**: The URL must include the `jdbc:` prefix and `:5432` port number!
 
 ### 3. Set Environment Variables in Your Application
 
@@ -117,17 +119,17 @@ java -jar target/backend-0.0.1-SNAPSHOT.jar
 
 ### Database URL Format
 
-Render PostgreSQL URLs should follow this format:
+Render PostgreSQL JDBC URLs must follow this format:
 
 ```
-postgresql://username:password@host:5432/database_name
+jdbc:postgresql://username:password@host:5432/database_name
 ```
 
-NOT:
+✅ MUST include:
 
-```
-jdbc:postgresql://...  (remove jdbc: prefix for Render URLs)
-```
+- `jdbc:` prefix
+- `:5432` port number
+- Full credentials with password
 
 ## Schema Migration
 
