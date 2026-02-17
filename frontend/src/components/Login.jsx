@@ -1,4 +1,5 @@
 import React, { useState, useContext } from "react";
+import { Link } from "react-router-dom";
 import API from "../api";
 import { AuthContext } from "../context/AuthContext";
 
@@ -65,6 +66,12 @@ const Login = () => {
                             Login
                         </button>
                     </form>
+                    <p className="text-center text-gray-600 mt-6">
+                        Don't have an account?{" "}
+                        <Link to="/signup" className="text-orange-600 hover:text-orange-700 font-semibold">
+                            Sign up here
+                        </Link>
+                    </p>
                 </div>
             </div>
         </div>
