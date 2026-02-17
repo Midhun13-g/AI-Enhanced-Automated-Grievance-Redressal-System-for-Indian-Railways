@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+transformers
+pydantic
+kafka-python
+requests
+torch

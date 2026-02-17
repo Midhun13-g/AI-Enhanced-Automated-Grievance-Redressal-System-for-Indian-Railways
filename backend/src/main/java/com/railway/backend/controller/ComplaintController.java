@@ -1,0 +1,36 @@
+package com.railway.backend.controller;
+
+import com.railway.backend.dto.ComplaintRequest;
+import com.railway.backend.dto.ComplaintResponse;
+import com.railway.backend.dto.StatusUpdateRequest;
+import com.railway.backend.service.ComplaintService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/complaints")
+@RequiredArgsConstructor
+public class ComplaintController {
+    private final ComplaintService complaintService;
+
+    @GetMapping
+    public ResponseEntity<List<ComplaintResponse>> getAllComplaints() {
+        return ResponseEntity.ok(complaintService.getAllComplaints());
+    }
+
+    @PostMapping
+    public ResponseEntity<ComplaintResponse> createComplaint(@Valid @RequestBody ComplaintRequest request) {
+        return ResponseEntity.ok(complaintService.createComplaint(request));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ComplaintResponse> updateStatus(@PathVariable Long id,
+            @Valid @RequestBody StatusUpdateRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(complaintService.updateStatus(id, request, authentication));
+    }
+}

@@ -1,0 +1,11 @@
+# Example Bucket4j rate limiting config for application.yml
+bucket4j:
+  enabled: true
+  filters:
+    - cache-name: buckets
+      url: .*
+      rate-limits:
+        - bandwidths:
+            - capacity: 100
+              time: 1
+              unit: minutes

@@ -1,0 +1,2 @@
+# Spring Boot rate limiting using Bucket4j
+implementation 'com.giffing.bucket4j.spring.boot.starter:bucket4j-spring-boot-starter:0.8.1'
