@@ -5,16 +5,19 @@ This directory contains automated scripts to build and run the Railway backend w
 ## Quick Start
 
 ### Windows (Cmd)
+
 ```batch
 run-backend.bat
 ```
 
 ### Windows (PowerShell)
+
 ```powershell
 .\run-backend.ps1
 ```
 
 ### macOS / Linux
+
 ```bash
 chmod +x run-backend.sh
 ./run-backend.sh
@@ -73,25 +76,30 @@ java -Dspring.profiles.active=render -jar backend/target/backend-0.0.1-SNAPSHOT.
 ## Troubleshooting
 
 ### Port Already in Use
+
 Backend runs on port **8081**. If in use:
+
 ```batch
 netstat -ano -p TCP | findstr :8081
 taskkill /PID <PID> /F
 ```
 
 ### Database Connection Fails
+
 - Verify Render PostgreSQL is running
 - Check credentials in `.env` file
 - Ensure internet connection is stable
 - Check firewall doesn't block outbound connections
 
 ### Build Fails
+
 ```batch
 # Full verbose build
 mvn -f backend/pom.xml clean package
 ```
 
 ### Clear Cache & Rebuild
+
 ```batch
 # Remove all built files
 rmdir /s /q backend\target

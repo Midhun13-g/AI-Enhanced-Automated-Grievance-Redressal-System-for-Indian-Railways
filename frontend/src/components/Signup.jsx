@@ -4,20 +4,30 @@ import API from "../api";
 
 const Signup = () => {
     const navigate = useNavigate();
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [role, setRole] = useState("PASSENGER");
     const [error, setError] = useState("");
+    const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const isValidEmail = (value) => /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/.test(value);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
+        setMessage("");
 
-        // Validation
-        if (!username || !password || !confirmPassword) {
-            setError("All fields are required");
+        if (!isValidEmail(normalizedEmail)) {
+            setError("Enter a valid email address");
+            return;
+        }
+
+        if (!password || !confirmPassword) {
+            setError("Email and password are required");
             return;
         }
 
@@ -34,12 +44,11 @@ const Signup = () => {
         setLoading(true);
         try {
             await API.post("/auth/signup", {
-                username,
+                email: normalizedEmail,
                 password,
                 role,
             });
-            // Redirect to login on successful signup
-            navigate("/login", { state: { message: "Signup successful! Please login." } });
+            navigate("/login", { state: { message: "Signup successful! Login with your email." } });
         } catch (err) {
             if (err.response?.data?.message) {
                 setError(err.response.data.message);
@@ -73,14 +82,19 @@ const Signup = () => {
                             {error}
                         </div>
                     )}
+                    {message && (
+                        <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded mb-4">
+                            {message}
+                        </div>
+                    )}
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">Username</label>
+                            <label className="block text-gray-700 font-semibold mb-2">Email</label>
                             <input
-                                type="text"
-                                placeholder="Choose a username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                type="email"
+                                placeholder="Enter your email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 required
                             />

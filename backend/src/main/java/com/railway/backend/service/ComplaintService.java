@@ -32,6 +32,18 @@ public class ComplaintService {
                 .collect(Collectors.toList());
     }
 
+    public List<ComplaintResponse> getComplaintsByStation(String station) {
+        return complaintRepository.findByStation(station).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<ComplaintResponse> getComplaintsByDepartment(String department) {
+        return complaintRepository.findByDepartment(department).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     public ComplaintResponse createComplaint(ComplaintRequest request) {
         Complaint complaint = Complaint.builder()
                 .passengerName(request.getPassengerName())

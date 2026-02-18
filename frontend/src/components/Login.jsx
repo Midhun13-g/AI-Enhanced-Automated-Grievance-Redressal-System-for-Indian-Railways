@@ -1,22 +1,32 @@
 import React, { useState, useContext } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import API from "../api";
 import { AuthContext } from "../context/AuthContext";
 
 const Login = () => {
+    const navigate = useNavigate();
+    const location = useLocation();
     const context = useContext(AuthContext);
     const login = context?.login;
-    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const successMessage = location.state?.message;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError("");
+        setLoading(true);
         try {
-            const res = await API.post("/auth/login", { username, password });
-            login(res.data.token, res.data.role, username);
+            const normalizedEmail = email.trim().toLowerCase();
+            const res = await API.post("/auth/login", { email: normalizedEmail, password });
+            login(res.data.token, res.data.role, res.data.email || normalizedEmail);
+            navigate("/");
         } catch (err) {
-            setError("Invalid credentials");
+            setError(err.response?.data?.message || "Invalid credentials");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -37,16 +47,22 @@ const Login = () => {
                 <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md border-t-4 border-orange-600">
                     <h2 className="text-3xl font-bold mb-2 text-center text-gray-800">Login</h2>
                     <p className="text-center text-gray-600 mb-6">Access your grievance portal</p>
+                    {successMessage && (
+                        <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded mb-4">
+                            {successMessage}
+                        </div>
+                    )}
                     {error && <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
-                            <label className="block text-gray-700 font-semibold mb-2">Username</label>
+                            <label className="block text-gray-700 font-semibold mb-2">Email</label>
                             <input
-                                type="text"
-                                placeholder="Enter your username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                type="email"
+                                placeholder="Enter your email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
                             />
                         </div>
                         <div className="mb-6">
@@ -57,13 +73,15 @@ const Login = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
                             />
                         </div>
                         <button
                             type="submit"
-                            className="w-full bg-gradient-to-r from-orange-600 to-orange-500 text-white py-3 rounded-lg hover:from-orange-700 hover:to-orange-600 font-semibold text-lg shadow-md transition"
+                            disabled={loading}
+                            className="w-full bg-gradient-to-r from-orange-600 to-orange-500 text-white py-3 rounded-lg hover:from-orange-700 hover:to-orange-600 font-semibold text-lg shadow-md transition disabled:opacity-50"
                         >
-                            Login
+                            {loading ? "Logging in..." : "Login"}
                         </button>
                     </form>
                     <p className="text-center text-gray-600 mt-6">

@@ -24,6 +24,9 @@ public class User {
     @Column(nullable = false)
     private String role;
 
+    @Column(name = "station")
+    private String station;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

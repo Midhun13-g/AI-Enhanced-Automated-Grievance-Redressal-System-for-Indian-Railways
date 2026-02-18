@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 
 export const AuthContext = createContext();
 
@@ -10,29 +9,27 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         if (token) {
             const role = localStorage.getItem("role") || "PASSENGER";
-            const username = localStorage.getItem("username") || "User";
-            setUser({ token, role, username });
+            const email = localStorage.getItem("email") || "User";
+            setUser({ token, role, email });
         } else {
             setUser(null);
         }
     }, [token]);
 
-    const login = (token, role, username = "User") => {
+    const login = (token, role, email = "User") => {
         setToken(token);
         localStorage.setItem("token", token);
         localStorage.setItem("role", role);
-        localStorage.setItem("username", username);
-        setUser({ token, role, username });
-        window.location.href = "/";
+        localStorage.setItem("email", email);
+        setUser({ token, role, email });
     };
 
     const logout = () => {
         setToken("");
         localStorage.removeItem("token");
         localStorage.removeItem("role");
-        localStorage.removeItem("username");
+        localStorage.removeItem("email");
         setUser(null);
-        window.location.href = "/login";
     };
 
     return (

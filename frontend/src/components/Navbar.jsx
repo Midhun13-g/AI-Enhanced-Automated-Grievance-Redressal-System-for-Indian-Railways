@@ -1,10 +1,9 @@
 import React, { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 
-const Navbar = () => {
+const Navbar = ({ onLogout }) => {
     const context = useContext(AuthContext);
     const user = context?.user;
-    const logout = context?.logout;
 
     return (
         <nav className="bg-gradient-to-r from-orange-600 to-orange-500 shadow-lg">
@@ -22,7 +21,7 @@ const Navbar = () => {
                     <div className="flex items-center space-x-4">
                         <span className="text-white text-sm">Welcome, {user?.username || "User"}</span>
                         <button
-                            onClick={logout}
+                            onClick={onLogout}
                             className="bg-white text-orange-600 px-4 py-2 rounded-md hover:bg-orange-50 font-semibold text-sm"
                         >
                             Logout

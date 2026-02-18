@@ -27,6 +27,12 @@ public class Complaint {
     @Column(name = "urgency_score")
     private Integer urgencyScore;
 
+    @Column(name = "station")
+    private String station;
+
+    @Column(name = "department")
+    private String department;
+
     @Column(nullable = false)
     private String status;
 

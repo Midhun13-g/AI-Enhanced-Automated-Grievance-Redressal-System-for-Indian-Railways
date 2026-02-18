@@ -3,9 +3,9 @@ server:
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/railwaydb}
-    username: ${DB_USERNAME:railway}
-    password: ${DB_PASSWORD:railwaypass}
+    url: jdbc:postgresql://dpg-d6a35an5r7bs73fgs510-a.oregon-postgres.render.com/railway_v3pl
+    username: railway_v3pl_user
+    password: cWUU8smbe7Ig2jJwmIzju70neBnW7BCN
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:

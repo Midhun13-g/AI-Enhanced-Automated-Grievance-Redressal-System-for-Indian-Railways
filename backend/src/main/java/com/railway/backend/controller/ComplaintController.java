@@ -17,9 +17,22 @@ import java.util.List;
 public class ComplaintController {
     private final ComplaintService complaintService;
 
+    // For admin: get all complaints
     @GetMapping
     public ResponseEntity<List<ComplaintResponse>> getAllComplaints() {
         return ResponseEntity.ok(complaintService.getAllComplaints());
+    }
+
+    // For station master: get complaints by station
+    @GetMapping("/station/{station}")
+    public ResponseEntity<List<ComplaintResponse>> getComplaintsByStation(@PathVariable String station) {
+        return ResponseEntity.ok(complaintService.getComplaintsByStation(station));
+    }
+
+    // For admin: get complaints by department
+    @GetMapping("/department/{department}")
+    public ResponseEntity<List<ComplaintResponse>> getComplaintsByDepartment(@PathVariable String department) {
+        return ResponseEntity.ok(complaintService.getComplaintsByDepartment(department));
     }
 
     @PostMapping
