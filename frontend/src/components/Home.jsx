@@ -1,6 +1,7 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import API from "../api";
 import Navbar from "./Navbar";
 
 const Home = () => {
@@ -8,11 +9,18 @@ const Home = () => {
     const context = useContext(AuthContext);
     const user = context?.user;
     const logoutFn = context?.logout;
+    const [helpline, setHelpline] = useState({ number: "139", description: "for Security/Medical Assistance" });
 
     const handleLogout = () => {
         logoutFn();
         navigate("/login");
     };
+
+    useEffect(() => {
+        API.get("/helpline")
+            .then((res) => setHelpline(res.data))
+            .catch(() => { });
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -20,8 +28,8 @@ const Home = () => {
             {/* Helpline Number Callout */}
             <div className="w-full bg-yellow-100 border-l-4 border-yellow-500 text-yellow-900 p-4 flex items-center justify-center">
                 <span className="font-bold text-lg mr-2">Helpline:</span>
-                <span className="font-mono text-xl">139</span>
-                <span className="ml-2">for Security/Medical Assistance</span>
+                <span className="font-mono text-xl">{helpline.number}</span>
+                <span className="ml-2">{helpline.description}</span>
             </div>
             <div className="max-w-7xl mx-auto px-4 py-12">
                 <div className="text-center mb-12">

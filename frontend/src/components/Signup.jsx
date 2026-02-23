@@ -9,11 +9,13 @@ const Signup = () => {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [role, setRole] = useState("USER");
     const [stationName, setStationName] = useState("");
+    const [officerKey, setOfficerKey] = useState("");
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
 
     const needsStation = role === "STATION_MASTER" || role === "STATION_STAFF";
+    const needsOfficerKey = role !== "USER";
 
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -51,6 +53,7 @@ const Signup = () => {
                 password,
                 role,
                 stationName: needsStation ? stationName : undefined,
+                officerKey: needsOfficerKey ? officerKey : undefined,
             });
             navigate("/login", { state: { message: "Signup successful! Login with your email." } });
         } catch (err) {
@@ -129,7 +132,7 @@ const Signup = () => {
                             <label className="block text-gray-700 font-semibold mb-2">Role</label>
                             <select
                                 value={role}
-                                onChange={(e) => { setRole(e.target.value); setStationName(""); }}
+                                onChange={(e) => { setRole(e.target.value); setStationName(""); setOfficerKey(""); }}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                             >
                                 <option value="USER">🧑 Passenger (User)</option>
@@ -155,6 +158,19 @@ const Signup = () => {
                                     placeholder="e.g. Chennai Central"
                                     value={stationName}
                                     onChange={(e) => setStationName(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    required
+                                />
+                            </div>
+                        )}
+                        {needsOfficerKey && (
+                            <div className="mb-6">
+                                <label className="block text-gray-700 font-semibold mb-2">Officer Access Key *</label>
+                                <input
+                                    type="password"
+                                    placeholder="Enter officer key"
+                                    value={officerKey}
+                                    onChange={(e) => setOfficerKey(e.target.value)}
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                     required
                                 />

@@ -7,6 +7,7 @@ import com.railway.backend.entity.User;
 import com.railway.backend.repository.UserRepository;
 import com.railway.backend.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -31,15 +33,27 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    @Value("${app.officer-signup-key:RAILMADAD_OFFICER_2026}")
+    private String officerSignupKey;
 
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
         String email = normalizeEmail(request.getEmail());
+        String role = request.getRole() != null ? request.getRole().trim().toUpperCase() : "USER";
         if (!isValidEmail(email)) {
             return badRequest("Please enter a valid email address.");
         }
         if (request.getPassword() == null || request.getPassword().length() < 6) {
             return badRequest("Password must be at least 6 characters");
+        }
+        List<String> allowedRoles = List.of("USER", "PASSENGER", "STATION_MASTER", "STATION_STAFF", "RPF_ADMIN", "SUPER_ADMIN");
+        if (!allowedRoles.contains(role)) {
+            return badRequest("Invalid role selected");
+        }
+        if (!"USER".equals(role) && !"PASSENGER".equals(role)) {
+            if (request.getOfficerKey() == null || !officerSignupKey.equals(request.getOfficerKey().trim())) {
+                return badRequest("Invalid officer access key");
+            }
         }
 
         Optional<User> existingUser = userRepository.findByUsername(email);
@@ -50,7 +64,7 @@ public class AuthController {
         User user = User.builder()
                 .username(email)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole() != null ? request.getRole() : "USER")
+                .role(role)
                 .station(request.getStationName())
                 .build();
 

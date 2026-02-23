@@ -50,9 +50,9 @@ const StaffDashboard = () => {
     const handleAddRemark = (id) => {
         const remark = remarkInput[id];
         if (!remark?.trim()) return;
-        API.patch(`/complaints/${id}/assign?staffName=${encodeURIComponent(staffName)}&remarks=${encodeURIComponent(remark)}`)
+        API.patch(`/complaints/${id}/remarks`, { remarks: remark.trim() })
             .then(() => {
-                setComplaints(c => c.map(comp => comp.id === id ? { ...comp, remarks: remark } : comp));
+                setComplaints(c => c.map(comp => comp.id === id ? { ...comp, remarks: remark.trim() } : comp));
                 setActiveRemark(null);
                 setRemarkInput(prev => ({ ...prev, [id]: "" }));
                 showSuccess("Remark saved!");

@@ -21,10 +21,7 @@ const AdminDashboard = () => {
     const [activeSection, setActiveSection] = useState("Dashboard");
     const [filterStatus, setFilterStatus] = useState("");
     const [filterDept, setFilterDept] = useState("");
-    const [officers, setOfficers] = useState([
-        { id: 1, name: "Rajan Kumar", badge: "RPF001", email: "rajan@rpf.in", cases: 5 },
-        { id: 2, name: "Sunita Rao", badge: "RPF002", email: "sunita@rpf.in", cases: 3 },
-    ]);
+    const [officers, setOfficers] = useState([]);
     const [newOfficer, setNewOfficer] = useState({ name: "", badge: "", email: "" });
     const [officerMsg, setOfficerMsg] = useState("");
 
@@ -33,6 +30,7 @@ const AdminDashboard = () => {
     useEffect(() => {
         API.get("/departments/analytics/by-department").then(res => setAnalytics(res.data)).catch(() => { });
         API.get("/departments/analytics/top-issues").then(res => setTopIssues(res.data)).catch(() => { });
+        API.get("/users?role=RPF_ADMIN").then(res => setOfficers(res.data)).catch(() => { });
         API.get("/complaints")
             .then(res => { setComplaints(res.data); setLoading(false); })
             .catch(() => setLoading(false));
@@ -60,9 +58,9 @@ const AdminDashboard = () => {
     const handleAddOfficer = (e) => {
         e.preventDefault();
         if (!newOfficer.name || !newOfficer.badge) return;
-        setOfficers([...officers, { ...newOfficer, id: Date.now(), cases: 0 }]);
+        setOfficers([...officers, { id: Date.now(), username: newOfficer.email || newOfficer.name, station: "", role: "RPF_ADMIN" }]);
         setNewOfficer({ name: "", badge: "", email: "" });
-        setOfficerMsg("Officer added successfully!");
+        setOfficerMsg("Officer added locally. Create user in Super Admin for persistent account.");
         setTimeout(() => setOfficerMsg(""), 3000);
     };
 
@@ -406,3 +404,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

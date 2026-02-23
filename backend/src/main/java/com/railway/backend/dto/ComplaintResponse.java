@@ -13,6 +13,8 @@ public class ComplaintResponse {
     private String status;
     private String station;
     private String department;
+    private String trainNumber;
+    private LocalDateTime incidentAt;
     private String assignedTo;
     private String remarks;
     private String aiMetadata;

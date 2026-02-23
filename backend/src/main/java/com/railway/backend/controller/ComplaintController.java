@@ -2,6 +2,7 @@ package com.railway.backend.controller;
 
 import com.railway.backend.dto.ComplaintRequest;
 import com.railway.backend.dto.ComplaintResponse;
+import com.railway.backend.dto.RemarkUpdateRequest;
 import com.railway.backend.dto.StatusUpdateRequest;
 import com.railway.backend.service.ComplaintService;
 import jakarta.validation.Valid;
@@ -51,8 +52,9 @@ public class ComplaintController {
     }
 
     @PostMapping
-    public ResponseEntity<ComplaintResponse> createComplaint(@Valid @RequestBody ComplaintRequest request) {
-        return ResponseEntity.ok(complaintService.createComplaint(request));
+    public ResponseEntity<ComplaintResponse> createComplaint(@Valid @RequestBody ComplaintRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(complaintService.createComplaint(request, authentication));
     }
 
     @PatchMapping("/{id}/status")
@@ -60,5 +62,11 @@ public class ComplaintController {
             @Valid @RequestBody StatusUpdateRequest request,
             Authentication authentication) {
         return ResponseEntity.ok(complaintService.updateStatus(id, request, authentication));
+    }
+
+    @PatchMapping("/{id}/remarks")
+    public ResponseEntity<ComplaintResponse> updateRemarks(@PathVariable Long id,
+            @Valid @RequestBody RemarkUpdateRequest request) {
+        return ResponseEntity.ok(complaintService.updateRemarks(id, request.getRemarks()));
     }
 }

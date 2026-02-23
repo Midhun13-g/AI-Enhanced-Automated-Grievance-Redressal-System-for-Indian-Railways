@@ -20,58 +20,70 @@ const StationMasterDashboard = () => {
     const navigate = useNavigate();
     const { user, logout } = useContext(AuthContext);
     const [complaints, setComplaints] = useState([]);
+    const [staff, setStaff] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState("Dashboard");
     const [filterStatus, setFilterStatus] = useState("");
     const [escalatedIds, setEscalatedIds] = useState([]);
-    const [remarkMap, setRemarkMap] = useState({});
     const [activeRemark, setActiveRemark] = useState(null);
-    const [staff, setStaff] = useState([
-        { id: 1, name: "Ramesh Kumar", role: "Platform Supervisor", cases: 0, present: true },
-        { id: 2, name: "Priya Singh", role: "Sanitation Head", cases: 0, present: true },
-        { id: 3, name: "Anil Yadav", role: "Security Guard", cases: 0, present: false },
-        { id: 4, name: "Meena Devi", role: "Ticket Checker", cases: 0, present: true },
-    ]);
-    const [assignMap, setAssignMap] = useState({});
+    const [remarkInput, setRemarkInput] = useState({});
     const [announcement, setAnnouncement] = useState({ team: "Cleaning", message: "" });
     const [announcementLog, setAnnouncementLog] = useState([]);
     const [opIssues, setOpIssues] = useState({
         platform: "Normal", water: "Normal", electricity: "Normal", maintenance: "Pending",
     });
-    const [newStaff, setNewStaff] = useState({ name: "", role: "" });
-    const [staffMsg, setStaffMsg] = useState("");
 
     const stationName = user?.stationName || user?.station || "Your Station";
 
     const handleLogout = () => { logout(); navigate("/login"); };
 
     useEffect(() => {
-        const url = stationName && stationName !== "Your Station"
+        const complaintsUrl = stationName && stationName !== "Your Station"
             ? `/complaints/station/${encodeURIComponent(stationName)}`
             : "/complaints";
-        API.get(url)
-            .then(res => { setComplaints(res.data); setLoading(false); })
+        const staffUrl = stationName && stationName !== "Your Station"
+            ? `/users?role=STATION_STAFF&station=${encodeURIComponent(stationName)}`
+            : "/users?role=STATION_STAFF";
+        Promise.all([API.get(complaintsUrl), API.get(staffUrl)])
+            .then(([complaintsRes, staffRes]) => {
+                setComplaints(complaintsRes.data);
+                setStaff(staffRes.data);
+                setLoading(false);
+            })
             .catch(() => setLoading(false));
     }, [stationName]);
 
     const handleStatusUpdate = (id, newStatus) => {
         API.patch(`/complaints/${id}/status`, { newStatus })
-            .then(() => setComplaints(c => c.map(comp => comp.id === id ? { ...comp, status: newStatus } : comp)))
+            .then((res) => setComplaints(c => c.map(comp => comp.id === id ? res.data : comp)))
             .catch(() => { });
     };
 
 
     const handleEscalate = (id) => {
         handleStatusUpdate(id, "IN_PROGRESS");
-        setEscalatedIds(prev => [...prev, id]);
+        setEscalatedIds(prev => prev.includes(id) ? prev : [...prev, id]);
     };
 
-    const handleAssign = (complaintId, staffId) => {
-        const officer = staff.find(s => s.id === Number(staffId));
-        if (!officer) return;
-        setAssignMap(prev => ({ ...prev, [complaintId]: officer.name }));
-        setStaff(prev => prev.map(s => s.id === officer.id ? { ...s, cases: s.cases + 1 } : s));
-        handleStatusUpdate(complaintId, "IN_PROGRESS");
+    const handleAssign = (complaintId, staffUsername) => {
+        if (!staffUsername) return;
+        API.patch(`/complaints/${complaintId}/assign?staffName=${encodeURIComponent(staffUsername)}`)
+            .then((res) => {
+                setComplaints(prev => prev.map(c => c.id === complaintId ? res.data : c));
+            })
+            .catch(() => { });
+    };
+
+    const handleSaveRemark = (complaintId) => {
+        const remark = (remarkInput[complaintId] || "").trim();
+        if (!remark) return;
+        API.patch(`/complaints/${complaintId}/remarks`, { remarks: remark })
+            .then((res) => {
+                setComplaints(prev => prev.map(c => c.id === complaintId ? res.data : c));
+                setRemarkInput(prev => ({ ...prev, [complaintId]: "" }));
+                setActiveRemark(null);
+            })
+            .catch(() => { });
     };
 
     const handleSendAnnouncement = (e) => {
@@ -80,15 +92,6 @@ const StationMasterDashboard = () => {
         const entry = { ...announcement, time: new Date().toLocaleTimeString(), id: Date.now() };
         setAnnouncementLog(prev => [entry, ...prev]);
         setAnnouncement(a => ({ ...a, message: "" }));
-    };
-
-    const handleAddStaff = (e) => {
-        e.preventDefault();
-        if (!newStaff.name || !newStaff.role) return;
-        setStaff(prev => [...prev, { id: Date.now(), ...newStaff, cases: 0, present: true }]);
-        setNewStaff({ name: "", role: "" });
-        setStaffMsg("Staff member added!");
-        setTimeout(() => setStaffMsg(""), 3000);
     };
 
     const filteredComplaints = complaints.filter(c =>
@@ -107,6 +110,12 @@ const StationMasterDashboard = () => {
     const resolutionRate = complaints.length
         ? Math.round((complaints.filter(c => c.status === "RESOLVED").length / complaints.length) * 100)
         : 0;
+    const staffWithStats = staff.map((s) => ({
+        ...s,
+        displayName: (s.username || "").split("@")[0] || s.username,
+        activeCases: complaints.filter(c => c.assignedTo === s.username && c.status !== "RESOLVED").length,
+        totalCases: complaints.filter(c => c.assignedTo === s.username).length,
+    }));
 
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden">
@@ -302,20 +311,27 @@ const StationMasterDashboard = () => {
                                                     <td className="py-3 px-4">{c.passengerName}</td>
                                                     <td className="py-3 px-4">
                                                         <div className="max-w-xs truncate">{c.complaintText}</div>
-                                                        {remarkMap[c.id] && <div className="text-xs text-gray-500 italic mt-1">📝 {remarkMap[c.id]}</div>}
+                                                        {(c.trainNumber || c.incidentAt) && (
+                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                {c.trainNumber ? `Train: ${c.trainNumber}` : ""}
+                                                                {c.trainNumber && c.incidentAt ? " | " : ""}
+                                                                {c.incidentAt ? `Incident: ${c.incidentAt.replace("T", " ").slice(0, 16)}` : ""}
+                                                            </div>
+                                                        )}
+                                                        {c.remarks && <div className="text-xs text-gray-500 italic mt-1">Remark: {c.remarks}</div>}
                                                     </td>
-                                                    <td className="py-3 px-4 text-gray-500 text-xs">{assignMap[c.id] || "—"}</td>
+                                                    <td className="py-3 px-4 text-gray-500 text-xs">{c.assignedTo || "Unassigned"}</td>
                                                     <td className="py-3 px-4"><StatusBadge status={displayStatus} /></td>
                                                     <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
                                                     <td className="py-3 px-4">
                                                         <div className="flex flex-wrap gap-1">
                                                             <button onClick={() => setActiveRemark(activeRemark === c.id ? null : c.id)}
                                                                 className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-200">Remark</button>
-                                                            {!isEscalated && c.status !== "IN_PROGRESS" && (
+                                                            {!isEscalated && c.status !== "RESOLVED" && !c.assignedTo && (
                                                                 <select defaultValue="" onChange={e => e.target.value && handleAssign(c.id, e.target.value)}
                                                                     className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded border border-blue-200">
                                                                     <option value="" disabled>Assign</option>
-                                                                    {staff.filter(s => s.present).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                                                    {staffWithStats.map(s => <option key={s.id} value={s.username}>{s.displayName}</option>)}
                                                                 </select>
                                                             )}
                                                             {!isEscalated && c.status !== "RESOLVED" && (
@@ -332,14 +348,12 @@ const StationMasterDashboard = () => {
                                                                 <input
                                                                     type="text"
                                                                     placeholder="Add remark..."
+                                                                    value={remarkInput[c.id] || ""}
                                                                     className="border border-gray-300 rounded px-2 py-1 text-xs flex-1"
-                                                                    onKeyDown={e => {
-                                                                        if (e.key === "Enter") {
-                                                                            setRemarkMap(prev => ({ ...prev, [c.id]: e.target.value }));
-                                                                            setActiveRemark(null);
-                                                                        }
-                                                                    }}
+                                                                    onChange={e => setRemarkInput(prev => ({ ...prev, [c.id]: e.target.value }))}
                                                                 />
+                                                                <button onClick={() => handleSaveRemark(c.id)}
+                                                                    className="bg-teal-600 text-white text-xs px-2 py-1 rounded hover:bg-teal-700">Save</button>
                                                             </div>
                                                         )}
                                                     </td>
@@ -399,55 +413,39 @@ const StationMasterDashboard = () => {
                     {/* ===== STAFF MANAGEMENT ===== */}
                     {activeSection === "Staff Management" && (
                         <div className="space-y-6">
-                            {/* Add staff form */}
                             <div className="bg-white rounded-xl shadow p-6">
-                                <h3 className="font-bold text-gray-800 mb-4">Add Station Staff</h3>
-                                {staffMsg && <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-2 rounded mb-4 text-sm">{staffMsg}</div>}
-                                <form onSubmit={handleAddStaff} className="grid md:grid-cols-3 gap-4">
-                                    <input type="text" placeholder="Staff Name *" value={newStaff.name}
-                                        onChange={e => setNewStaff({ ...newStaff, name: e.target.value })}
-                                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" required />
-                                    <input type="text" placeholder="Role / Designation *" value={newStaff.role}
-                                        onChange={e => setNewStaff({ ...newStaff, role: e.target.value })}
-                                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400" required />
-                                    <button type="submit" className="bg-teal-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-teal-700">+ Add Staff</button>
-                                </form>
+                                <h3 className="font-bold text-gray-800 mb-2">Station Staff Roster</h3>
+                                <p className="text-sm text-gray-500">
+                                    Staff accounts are managed centrally by Super Admin. This view is synced from backend users.
+                                </p>
                             </div>
-                            {/* Staff table */}
                             <div className="bg-white rounded-xl shadow overflow-hidden">
                                 <div className="p-5 border-b flex justify-between items-center">
-                                    <h3 className="font-bold text-gray-800">Station Staff ({staff.length})</h3>
-                                    <span className="text-sm text-gray-500">{staff.filter(s => s.present).length} present today</span>
+                                    <h3 className="font-bold text-gray-800">Station Staff ({staffWithStats.length})</h3>
+                                    <span className="text-sm text-gray-500">Station: {stationName}</span>
                                 </div>
                                 <table className="min-w-full text-sm">
                                     <thead className="bg-gray-50 text-gray-600">
                                         <tr>
-                                            <th className="py-3 px-4 text-left">Name</th>
-                                            <th className="py-3 px-4 text-left">Designation</th>
-                                            <th className="py-3 px-4 text-left">Assigned Cases</th>
-                                            <th className="py-3 px-4 text-left">Attendance</th>
-                                            <th className="py-3 px-4 text-left">Toggle</th>
+                                            <th className="py-3 px-4 text-left">User</th>
+                                            <th className="py-3 px-4 text-left">Role</th>
+                                            <th className="py-3 px-4 text-left">Active Cases</th>
+                                            <th className="py-3 px-4 text-left">Total Assigned</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {staff.map(s => (
+                                        {staffWithStats.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="4" className="py-8 text-center text-gray-400">No station staff users found.</td>
+                                            </tr>
+                                        ) : staffWithStats.map(s => (
                                             <tr key={s.id} className="border-b hover:bg-teal-50">
-                                                <td className="py-3 px-4 font-semibold">👷 {s.name}</td>
+                                                <td className="py-3 px-4 font-semibold">{s.displayName}</td>
                                                 <td className="py-3 px-4 text-gray-500">{s.role}</td>
                                                 <td className="py-3 px-4">
-                                                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">{s.cases} cases</span>
+                                                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">{s.activeCases} cases</span>
                                                 </td>
-                                                <td className="py-3 px-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${s.present ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                                                        {s.present ? "Present" : "Absent"}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4">
-                                                    <button onClick={() => setStaff(prev => prev.map(m => m.id === s.id ? { ...m, present: !m.present } : m))}
-                                                        className={`text-xs px-3 py-1 rounded font-semibold ${s.present ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}>
-                                                        {s.present ? "Mark Absent" : "Mark Present"}
-                                                    </button>
-                                                </td>
+                                                <td className="py-3 px-4 text-gray-500">{s.totalCases}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -455,7 +453,6 @@ const StationMasterDashboard = () => {
                             </div>
                         </div>
                     )}
-
                     {/* ===== REPORTS / ANNOUNCEMENTS ===== */}
                     {activeSection === "Reports" && (
                         <div className="space-y-6">
@@ -510,7 +507,7 @@ const StationMasterDashboard = () => {
                                         { label: "Resolved", value: complaints.filter(c => c.status === "RESOLVED").length, icon: "✅" },
                                         { label: "Escalated to RPF", value: escalatedIds.length, icon: "↑" },
                                         { label: "Pending", value: complaints.filter(c => c.status === "PENDING").length, icon: "⏳" },
-                                        { label: "Staff Present", value: staff.filter(s => s.present).length, icon: "👷" },
+                                        { label: "Station Staff", value: staffWithStats.length, icon: "👷" },
                                         { label: "Resolution Rate", value: `${resolutionRate}%`, icon: "📈" },
                                     ].map(s => (
                                         <div key={s.label} className="bg-gray-50 rounded-lg p-4 flex items-center gap-3">
@@ -532,3 +529,4 @@ const StationMasterDashboard = () => {
 };
 
 export default StationMasterDashboard;
+

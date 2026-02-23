@@ -10,21 +10,25 @@ import com.railway.backend.repository.ComplaintHistoryRepository;
 import com.railway.backend.repository.ComplaintRepository;
 import com.railway.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ComplaintService {
     private final ComplaintRepository complaintRepository;
     private final ComplaintHistoryRepository complaintHistoryRepository;
     private final UserRepository userRepository;
     private final KafkaTemplate<String, Long> kafkaTemplate;
+    @Value("${app.kafka.enabled:false}")
+    private boolean kafkaEnabled;
 
     public List<ComplaintResponse> getAllComplaints() {
         return complaintRepository.findAllByOrderByUrgencyScoreDesc().stream()
@@ -62,17 +66,35 @@ public class ComplaintService {
                 .collect(Collectors.toList());
     }
 
-    public ComplaintResponse createComplaint(ComplaintRequest request) {
+    public ComplaintResponse createComplaint(ComplaintRequest request, Authentication auth) {
+        String category = (request.getCategory() == null || request.getCategory().isBlank())
+                ? "GENERAL"
+                : request.getCategory().trim();
+        String station = null;
+        if (auth != null && auth.getName() != null) {
+            station = userRepository.findByUsername(auth.getName())
+                    .map(User::getStation)
+                    .orElse(null);
+        }
         Complaint complaint = Complaint.builder()
                 .passengerName(request.getPassengerName())
                 .complaintText(request.getComplaintText())
-                .category(request.getCategory())
+                .trainNumber(request.getTrainNumber())
+                .incidentAt(request.getIncidentAt())
+                .category(category)
                 .status("PENDING")
                 .urgencyScore(0)
+                .station(station)
                 .aiMetadata(null)
                 .build();
         Complaint saved = complaintRepository.save(complaint);
-        kafkaTemplate.send("complaint-classification", saved.getId());
+        if (kafkaEnabled) {
+            try {
+                kafkaTemplate.send("complaint-classification", saved.getId());
+            } catch (Exception ex) {
+                log.warn("Kafka publish failed for complaint id {}. Complaint is saved; AI enrichment deferred.", saved.getId(), ex);
+            }
+        }
         return toResponse(saved);
     }
 
@@ -94,6 +116,14 @@ public class ComplaintService {
         return toResponse(updated);
     }
 
+    @Transactional
+    public ComplaintResponse updateRemarks(Long id, String remarks) {
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        complaint.setRemarks(remarks);
+        return toResponse(complaintRepository.save(complaint));
+    }
+
     private ComplaintResponse toResponse(Complaint complaint) {
         ComplaintResponse resp = new ComplaintResponse();
         resp.setId(complaint.getId());
@@ -104,6 +134,8 @@ public class ComplaintService {
         resp.setStatus(complaint.getStatus());
         resp.setStation(complaint.getStation());
         resp.setDepartment(complaint.getDepartment());
+        resp.setTrainNumber(complaint.getTrainNumber());
+        resp.setIncidentAt(complaint.getIncidentAt());
         resp.setAssignedTo(complaint.getAssignedTo());
         resp.setRemarks(complaint.getRemarks());
         resp.setAiMetadata(complaint.getAiMetadata());

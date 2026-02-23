@@ -10,7 +10,6 @@ const Dashboard = () => {
     const [complaints, setComplaints] = useState([]);
     const [loading, setLoading] = useState(true);
     const context = useContext(AuthContext);
-    const user = context?.user;
     const logoutFn = context?.logout;
 
     const handleLogout = () => {
@@ -68,13 +67,12 @@ const Dashboard = () => {
                                         <th className="py-3 px-4 text-left font-semibold">Category</th>
                                         <th className="py-3 px-4 text-left font-semibold">Urgency</th>
                                         <th className="py-3 px-4 text-left font-semibold">Status</th>
-                                        {user?.role !== "PASSENGER" && <th className="py-3 px-4 text-left font-semibold">Actions</th>}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {complaints.length === 0 ? (
                                         <tr>
-                                            <td colSpan="7" className="py-8 text-center text-gray-500">
+                                            <td colSpan="6" className="py-8 text-center text-gray-500">
                                                 No complaints found. <Link to="/complaints/new" className="text-orange-600 hover:underline">Submit your first grievance</Link>.
                                             </td>
                                         </tr>
@@ -99,11 +97,6 @@ const Dashboard = () => {
                                                         {c.status}
                                                     </span>
                                                 </td>
-                                                {user?.role !== "PASSENGER" && (
-                                                    <td className="py-3 px-4">
-                                                        <button className="text-orange-600 hover:text-orange-800 font-semibold">Update</button>
-                                                    </td>
-                                                )}
                                             </tr>
                                         ))
                                     )}

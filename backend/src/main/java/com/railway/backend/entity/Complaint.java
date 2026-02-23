@@ -2,6 +2,9 @@ package com.railway.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -33,6 +36,12 @@ public class Complaint {
     @Column(name = "department")
     private String department;
 
+    @Column(name = "train_number")
+    private String trainNumber;
+
+    @Column(name = "incident_at")
+    private LocalDateTime incidentAt;
+
     @Column(name = "assigned_to")
     private String assignedTo;
 
@@ -43,6 +52,7 @@ public class Complaint {
     private String status;
 
     @Column(name = "ai_metadata", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String aiMetadata;
 
     @Column(name = "created_at")

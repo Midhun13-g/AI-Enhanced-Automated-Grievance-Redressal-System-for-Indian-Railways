@@ -3,10 +3,18 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://dpg-d6a35an5r7bs73fgs510-a.oregon-postgres.render.com/railway_v3pl
-    username: railway_v3pl_user
-    password: cWUU8smbe7Ig2jJwmIzju70neBnW7BCN
+    url: ${DB_URL:jdbc:postgresql://dpg-d6a35an5r7bs73fgs510-a.oregon-postgres.render.com:5432/railway_v3pl?sslmode=require&connectTimeout=10&socketTimeout=30&tcpKeepAlive=true}
+    username: ${DB_USERNAME:railway_v3pl_user}
+    password: ${DB_PASSWORD:cWUU8smbe7Ig2jJwmIzju70neBnW7BCN}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 8
+      minimum-idle: 2
+      connection-timeout: 20000
+      validation-timeout: 5000
+      idle-timeout: 120000
+      max-lifetime: 240000
+      keepalive-time: 60000
   jpa:
     hibernate:
       ddl-auto: update
@@ -15,7 +23,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   kafka:
-    bootstrap-servers: kafka:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: railway-group
       auto-offset-reset: earliest
@@ -25,6 +33,11 @@ spring:
 
 jwt:
   secret: "supersecretkeyforjwt"
+
+app:
+  kafka:
+    enabled: ${APP_KAFKA_ENABLED:false}
+  officer-signup-key: ${APP_OFFICER_SIGNUP_KEY:RAILMADAD_OFFICER_2026}
 
 logging:
   level:

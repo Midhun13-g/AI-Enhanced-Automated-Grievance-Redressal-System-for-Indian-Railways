@@ -10,6 +10,8 @@ const ComplaintForm = () => {
     const logoutFn = context?.logout;
     const [passengerName, setPassengerName] = useState("");
     const [complaintText, setComplaintText] = useState("");
+    const [trainNumber, setTrainNumber] = useState("");
+    const [incidentAt, setIncidentAt] = useState("");
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
@@ -25,10 +27,18 @@ const ComplaintForm = () => {
         setSuccess("");
         setLoading(true);
         try {
-            await API.post("/complaints", { passengerName, complaintText });
+            await API.post("/complaints", {
+                passengerName,
+                complaintText,
+                trainNumber,
+                incidentAt,
+                category: "GENERAL",
+            });
             setSuccess("Complaint submitted successfully!");
             setPassengerName("");
             setComplaintText("");
+            setTrainNumber("");
+            setIncidentAt("");
             setTimeout(() => {
                 navigate("/complaints");
             }, 2000);
@@ -73,6 +83,27 @@ const ComplaintForm = () => {
                                     </svg>
                                 </span>
                             </div>
+                        </div>
+                        <div>
+                            <label className="block text-gray-700 font-semibold mb-2">Train Number <span className="text-orange-600">*</span></label>
+                            <input
+                                type="text"
+                                placeholder="e.g. 126001"
+                                value={trainNumber}
+                                onChange={(e) => setTrainNumber(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-gray-700 font-semibold mb-2">Incident Date & Time <span className="text-orange-600">*</span></label>
+                            <input
+                                type="datetime-local"
+                                value={incidentAt}
+                                onChange={(e) => setIncidentAt(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
+                            />
                         </div>
                         <div>
                             <label className="block text-gray-700 font-semibold mb-2">Complaint Details <span className="text-orange-600">*</span></label>
