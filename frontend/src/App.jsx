@@ -1,69 +1,65 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import React, { useContext } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, AuthContext } from "./context/AuthContext";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
-
 import Home from "./components/Home";
 import ComplaintForm from "./components/ComplaintForm";
 import Dashboard from "./components/Dashboard";
 import AdminDashboard from "./components/AdminDashboard";
 import StationMasterDashboard from "./components/StationMasterDashboard";
 import EmergencyContacts from "./components/EmergencyContacts";
-import ProtectedRoute from "./components/ProtectedRoute";
 
-
-import { useContext } from "react";
-import { AuthContext } from "./context/AuthContext";
-
-function RoleBasedHome() {
+function AppRoutes() {
     const { user } = useContext(AuthContext);
-    if (!user) return <Home />;
-    if (user.role === "ADMIN") return <AdminDashboard />;
-    if (user.role === "STATION_MASTER") return <StationMasterDashboard />;
-    return <Home />;
+
+    if (!user) {
+        return (
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+        );
+    }
+
+    if (user.role === "RPF_ADMIN" || user.role === "ADMIN") {
+        return (
+            <Routes>
+                <Route path="/" element={<AdminDashboard />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        );
+    }
+
+    if (user.role === "STATION_MASTER") {
+        return (
+            <Routes>
+                <Route path="/" element={<StationMasterDashboard />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        );
+    }
+
+    // USER / PASSENGER
+    return (
+        <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/complaints/new" element={<ComplaintForm />} />
+            <Route path="/complaints" element={<Dashboard />} />
+            <Route path="/emergency-contacts" element={<EmergencyContacts />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/signup" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+    );
 }
 
 function App() {
     return (
         <AuthProvider>
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route
-                        path="/"
-                        element={
-                            <ProtectedRoute>
-                                <RoleBasedHome />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/complaints/new"
-                        element={
-                            <ProtectedRoute>
-                                <ComplaintForm />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/complaints"
-                        element={
-                            <ProtectedRoute>
-                                <Dashboard />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/emergency-contacts"
-                        element={
-                            <ProtectedRoute>
-                                <EmergencyContacts />
-                            </ProtectedRoute>
-                        }
-                    />
-                </Routes>
+                <AppRoutes />
             </Router>
         </AuthProvider>
     );

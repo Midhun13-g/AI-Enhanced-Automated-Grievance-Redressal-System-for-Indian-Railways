@@ -78,6 +78,7 @@ public class AuthController {
         response.setToken(token);
         response.setRole(user.getRole());
         response.setEmail(user.getUsername());
+        response.setStationName(user.getStation());
         return ResponseEntity.ok(response);
     }
 

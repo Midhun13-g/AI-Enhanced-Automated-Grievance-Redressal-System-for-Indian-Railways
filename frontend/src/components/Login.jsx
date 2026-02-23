@@ -21,7 +21,7 @@ const Login = () => {
         try {
             const normalizedEmail = email.trim().toLowerCase();
             const res = await API.post("/auth/login", { email: normalizedEmail, password });
-            login(res.data.token, res.data.role, res.data.email || normalizedEmail);
+            login(res.data.token, res.data.role, res.data.stationName || "");
             navigate("/");
         } catch (err) {
             setError(err.response?.data?.message || "Invalid credentials");

@@ -19,7 +19,7 @@ const Navbar = ({ onLogout }) => {
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                        <span className="text-white text-sm">Welcome, {user?.username || "User"}</span>
+                        <span className="text-white text-sm">Welcome, {user?.role || "User"}</span>
                         <button
                             onClick={onLogout}
                             className="bg-white text-orange-600 px-4 py-2 rounded-md hover:bg-orange-50 font-semibold text-sm"

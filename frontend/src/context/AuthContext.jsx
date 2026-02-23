@@ -6,29 +6,30 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(localStorage.getItem("token") || "");
 
+
     useEffect(() => {
         if (token) {
             const role = localStorage.getItem("role") || "PASSENGER";
-            const email = localStorage.getItem("email") || "User";
-            setUser({ token, role, email });
+            const stationName = localStorage.getItem("stationName") || "";
+            setUser({ token, role, stationName });
         } else {
             setUser(null);
         }
     }, [token]);
 
-    const login = (token, role, email = "User") => {
+    const login = (token, role, stationName) => {
         setToken(token);
         localStorage.setItem("token", token);
         localStorage.setItem("role", role);
-        localStorage.setItem("email", email);
-        setUser({ token, role, email });
+        if (stationName) localStorage.setItem("stationName", stationName);
+        setUser({ token, role, stationName: stationName || "" });
     };
 
     const logout = () => {
         setToken("");
         localStorage.removeItem("token");
         localStorage.removeItem("role");
-        localStorage.removeItem("email");
+        localStorage.removeItem("stationName");
         setUser(null);
     };
 

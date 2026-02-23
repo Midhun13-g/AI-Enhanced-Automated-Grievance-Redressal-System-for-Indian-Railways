@@ -10,7 +10,6 @@ const ComplaintForm = () => {
     const logoutFn = context?.logout;
     const [passengerName, setPassengerName] = useState("");
     const [complaintText, setComplaintText] = useState("");
-    const [category, setCategory] = useState("");
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
@@ -26,11 +25,10 @@ const ComplaintForm = () => {
         setSuccess("");
         setLoading(true);
         try {
-            await API.post("/complaints", { passengerName, complaintText, category });
+            await API.post("/complaints", { passengerName, complaintText });
             setSuccess("Complaint submitted successfully!");
             setPassengerName("");
             setComplaintText("");
-            setCategory("");
             setTimeout(() => {
                 navigate("/complaints");
             }, 2000);
@@ -58,39 +56,22 @@ const ComplaintForm = () => {
                     {error && <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
                     {success && <div className="bg-green-50 border border-green-300 text-green-700 px-4 py-3 rounded mb-4">{success}</div>}
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-gray-700 font-semibold mb-2">Passenger Name <span className="text-orange-600">*</span></label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Enter your full name"
-                                        value={passengerName}
-                                        onChange={(e) => setPassengerName(e.target.value)}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 pr-10"
-                                        required
-                                    />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-400">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 19.5a7.5 7.5 0 0115 0v.75A2.25 2.25 0 0117.25 22.5h-10.5A2.25 2.25 0 014.5 20.25V19.5z" />
-                                        </svg>
-                                    </span>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-gray-700 font-semibold mb-2">Category</label>
-                                <select
-                                    value={category}
-                                    onChange={(e) => setCategory(e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                >
-                                    <option value="">Select Category</option>
-                                    <option value="Cleanliness">Cleanliness</option>
-                                    <option value="Staff Behavior">Staff Behavior</option>
-                                    <option value="Facilities">Facilities</option>
-                                    <option value="Safety">Safety</option>
-                                    <option value="Other">Other</option>
-                                </select>
+                        <div>
+                            <label className="block text-gray-700 font-semibold mb-2">Passenger Name <span className="text-orange-600">*</span></label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Enter your full name"
+                                    value={passengerName}
+                                    onChange={(e) => setPassengerName(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 pr-10"
+                                    required
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 19.5a7.5 7.5 0 0115 0v.75A2.25 2.25 0 0117.25 22.5h-10.5A2.25 2.25 0 014.5 20.25V19.5z" />
+                                    </svg>
+                                </span>
                             </div>
                         </div>
                         <div>
