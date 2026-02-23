@@ -11,6 +11,10 @@ public class ComplaintResponse {
     private String category;
     private Integer urgencyScore;
     private String status;
+    private String station;
+    private String department;
+    private String assignedTo;
+    private String remarks;
     private String aiMetadata;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

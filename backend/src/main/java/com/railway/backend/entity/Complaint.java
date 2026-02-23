@@ -33,6 +33,12 @@ public class Complaint {
     @Column(name = "department")
     private String department;
 
+    @Column(name = "assigned_to")
+    private String assignedTo;
+
+    @Column(name = "remarks", columnDefinition = "TEXT")
+    private String remarks;
+
     @Column(nullable = false)
     private String status;
 

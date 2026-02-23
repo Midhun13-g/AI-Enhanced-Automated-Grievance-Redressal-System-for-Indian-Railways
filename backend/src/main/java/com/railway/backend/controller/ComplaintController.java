@@ -35,6 +35,21 @@ public class ComplaintController {
         return ResponseEntity.ok(complaintService.getComplaintsByDepartment(department));
     }
 
+    // For station staff: get complaints assigned to them
+    @GetMapping("/assigned-to/{staffName}")
+    public ResponseEntity<List<ComplaintResponse>> getByAssignedTo(@PathVariable String staffName) {
+        return ResponseEntity.ok(complaintService.getComplaintsByAssignedTo(staffName));
+    }
+
+    // For station master: assign complaint to staff
+    @PatchMapping("/{id}/assign")
+    public ResponseEntity<ComplaintResponse> assignComplaint(
+            @PathVariable Long id,
+            @RequestParam String staffName,
+            @RequestParam(required = false) String remarks) {
+        return ResponseEntity.ok(complaintService.assignComplaint(id, staffName, remarks));
+    }
+
     @PostMapping
     public ResponseEntity<ComplaintResponse> createComplaint(@Valid @RequestBody ComplaintRequest request) {
         return ResponseEntity.ok(complaintService.createComplaint(request));

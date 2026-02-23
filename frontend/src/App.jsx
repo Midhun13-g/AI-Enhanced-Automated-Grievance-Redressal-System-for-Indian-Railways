@@ -8,6 +8,8 @@ import ComplaintForm from "./components/ComplaintForm";
 import Dashboard from "./components/Dashboard";
 import AdminDashboard from "./components/AdminDashboard";
 import StationMasterDashboard from "./components/StationMasterDashboard";
+import StaffDashboard from "./components/StaffDashboard";
+import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import EmergencyContacts from "./components/EmergencyContacts";
 
 function AppRoutes() {
@@ -19,6 +21,15 @@ function AppRoutes() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+        );
+    }
+
+    if (user.role === "SUPER_ADMIN") {
+        return (
+            <Routes>
+                <Route path="/" element={<SuperAdminDashboard />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         );
     }
@@ -36,6 +47,15 @@ function AppRoutes() {
         return (
             <Routes>
                 <Route path="/" element={<StationMasterDashboard />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+        );
+    }
+
+    if (user.role === "STATION_STAFF") {
+        return (
+            <Routes>
+                <Route path="/" element={<StaffDashboard />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         );

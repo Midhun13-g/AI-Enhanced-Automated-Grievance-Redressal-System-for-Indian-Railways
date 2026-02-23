@@ -32,6 +32,24 @@ public class ComplaintService {
                 .collect(Collectors.toList());
     }
 
+    public List<ComplaintResponse> getComplaintsByAssignedTo(String assignedTo) {
+        return complaintRepository.findByAssignedTo(assignedTo).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public ComplaintResponse assignComplaint(Long id, String staffName, String remarks) {
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        complaint.setAssignedTo(staffName);
+        if (remarks != null && !remarks.isBlank())
+            complaint.setRemarks(remarks);
+        if ("PENDING".equals(complaint.getStatus()))
+            complaint.setStatus("IN_PROGRESS");
+        return toResponse(complaintRepository.save(complaint));
+    }
+
     public List<ComplaintResponse> getComplaintsByStation(String station) {
         return complaintRepository.findByStation(station).stream()
                 .map(this::toResponse)
@@ -84,6 +102,10 @@ public class ComplaintService {
         resp.setCategory(complaint.getCategory());
         resp.setUrgencyScore(complaint.getUrgencyScore());
         resp.setStatus(complaint.getStatus());
+        resp.setStation(complaint.getStation());
+        resp.setDepartment(complaint.getDepartment());
+        resp.setAssignedTo(complaint.getAssignedTo());
+        resp.setRemarks(complaint.getRemarks());
         resp.setAiMetadata(complaint.getAiMetadata());
         resp.setCreatedAt(complaint.getCreatedAt());
         resp.setUpdatedAt(complaint.getUpdatedAt());

@@ -10,5 +10,6 @@ import lombok.NoArgsConstructor;
 public class SignupRequest {
     private String email;
     private String password;
-    private String role; // PASSENGER, STATION_MASTER, RPF_ADMIN
+    private String role; // USER, STATION_MASTER, STATION_STAFF, RPF_ADMIN, SUPER_ADMIN
+    private String stationName; // station for STATION_MASTER / STATION_STAFF
 }
