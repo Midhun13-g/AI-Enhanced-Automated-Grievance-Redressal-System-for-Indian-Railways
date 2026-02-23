@@ -7,10 +7,13 @@ const Signup = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [role, setRole] = useState("PASSENGER");
+    const [role, setRole] = useState("USER");
+    const [stationName, setStationName] = useState("");
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const needsStation = role === "STATION_MASTER" || role === "STATION_STAFF";
 
     const normalizedEmail = email.trim().toLowerCase();
 
@@ -47,6 +50,7 @@ const Signup = () => {
                 email: normalizedEmail,
                 password,
                 role,
+                stationName: needsStation ? stationName : undefined,
             });
             navigate("/login", { state: { message: "Signup successful! Login with your email." } });
         } catch (err) {
@@ -125,14 +129,37 @@ const Signup = () => {
                             <label className="block text-gray-700 font-semibold mb-2">Role</label>
                             <select
                                 value={role}
-                                onChange={(e) => setRole(e.target.value)}
+                                onChange={(e) => { setRole(e.target.value); setStationName(""); }}
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                             >
-                                <option value="PASSENGER">Passenger</option>
-                                <option value="STATION_MASTER">Station Master</option>
-                                <option value="RPF_ADMIN">RPF Admin</option>
+                                <option value="USER">🧑 Passenger (User)</option>
+                                <option value="STATION_MASTER">🚉 Station Master</option>
+                                <option value="STATION_STAFF">👷 Station Staff</option>
+                                <option value="RPF_ADMIN">👮 RPF Admin</option>
+                                <option value="SUPER_ADMIN">🏛️ Super Admin</option>
                             </select>
+                            {role !== "USER" && (
+                                <p className="text-xs text-orange-600 mt-1">
+                                    {role === "STATION_MASTER" && "Controls operations of a specific station."}
+                                    {role === "STATION_STAFF" && "Handles tasks assigned by the Station Master."}
+                                    {role === "RPF_ADMIN" && "Monitors security complaints and officers nationwide."}
+                                    {role === "SUPER_ADMIN" && "⚠️ Full system control — Railway Board level access."}
+                                </p>
+                            )}
                         </div>
+                        {needsStation && (
+                            <div className="mb-6">
+                                <label className="block text-gray-700 font-semibold mb-2">Station Name *</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Chennai Central"
+                                    value={stationName}
+                                    onChange={(e) => setStationName(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    required
+                                />
+                            </div>
+                        )}
                         <button
                             type="submit"
                             disabled={loading}
