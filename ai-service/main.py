@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import requests
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
 import os
 
 app = FastAPI()
@@ -9,25 +10,31 @@ app = FastAPI()
 # Environment Variable
 # ==============================
 HF_TOKEN = os.getenv("HF_TOKEN")
-
 if not HF_TOKEN:
     raise RuntimeError("HF_TOKEN environment variable not set")
 
 MODEL_NAME = "midhun-2542/AI_Railway_Model"
-API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL_NAME}"
 
-HEADERS = {
-    "Authorization": f"Bearer {HF_TOKEN}",
-    "Content-Type": "application/json"
-}
+# ==============================
+# Load Model at Startup
+# ==============================
+tokenizer = AutoTokenizer.from_pretrained(
+    MODEL_NAME,
+    token=HF_TOKEN
+)
 
+model = AutoModelForSequenceClassification.from_pretrained(
+    MODEL_NAME,
+    token=HF_TOKEN
+)
+
+model.eval()
 
 # ==============================
 # Request Schema
 # ==============================
 class ComplaintData(BaseModel):
     text: str
-
 
 # ==============================
 # Health Check
@@ -36,45 +43,32 @@ class ComplaintData(BaseModel):
 def health():
     return {"status": "ok"}
 
-
 # ==============================
 # Classification Endpoint
 # ==============================
 @app.post("/classify")
 def classify(data: ComplaintData):
-    payload = {
-        "inputs": data.text
-    }
-
     try:
-        response = requests.post(API_URL, headers=HEADERS, json=payload)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    if response.status_code != 200:
-        raise HTTPException(
-            status_code=response.status_code,
-            detail=response.text
+        inputs = tokenizer(
+            data.text,
+            return_tensors="pt",
+            truncation=True,
+            padding=True
         )
 
-    result = response.json()
+        with torch.no_grad():
+            outputs = model(**inputs)
 
-    # Handle HF error format
-    if isinstance(result, dict) and "error" in result:
-        raise HTTPException(status_code=503, detail=result["error"])
+        logits = outputs.logits
+        probabilities = torch.nn.functional.softmax(logits, dim=1)
+        confidence, predicted_class = torch.max(probabilities, dim=1)
 
-    try:
-        # HF returns list of list
-        predictions = result[0]
-        best = max(predictions, key=lambda x: x["score"])
+        label = model.config.id2label[int(predicted_class)]
 
         return {
-            "category": best["label"],
-            "confidence": round(float(best["score"]), 4)
+            "category": label,
+            "confidence": round(float(confidence), 4)
         }
 
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Unexpected response format: {result}"
-        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
