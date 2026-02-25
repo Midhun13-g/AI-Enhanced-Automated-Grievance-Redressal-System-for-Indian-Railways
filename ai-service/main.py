@@ -1,4 +1,3 @@
-# ai-service/main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
@@ -6,17 +5,15 @@ import os
 
 app = FastAPI()
 
-# =============================
-# Environment Variables
-# =============================
+# ==============================
+# Environment Variable
+# ==============================
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 if not HF_TOKEN:
     raise RuntimeError("HF_TOKEN environment variable not set")
 
 MODEL_NAME = "midhun-2542/AI_Railway_Model"
-
-# ✅ NEW WORKING ENDPOINT
 API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL_NAME}"
 
 HEADERS = {
@@ -25,14 +22,34 @@ HEADERS = {
 }
 
 
+# ==============================
+# Request Schema
+# ==============================
 class ComplaintData(BaseModel):
     text: str
 
 
-def query_hf(text: str):
-    payload = {"inputs": text}
+# ==============================
+# Health Check
+# ==============================
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
-    response = requests.post(API_URL, headers=HEADERS, json=payload)
+
+# ==============================
+# Classification Endpoint
+# ==============================
+@app.post("/classify")
+def classify(data: ComplaintData):
+    payload = {
+        "inputs": data.text
+    }
+
+    try:
+        response = requests.post(API_URL, headers=HEADERS, json=payload)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     if response.status_code != 200:
         raise HTTPException(
@@ -40,28 +57,22 @@ def query_hf(text: str):
             detail=response.text
         )
 
-    return response.json()
+    result = response.json()
 
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-
-@app.post("/classify")
-def classify(data: ComplaintData):
-    result = query_hf(data.text)
-
-    # If HF returns error
+    # Handle HF error format
     if isinstance(result, dict) and "error" in result:
         raise HTTPException(status_code=503, detail=result["error"])
 
     try:
-        best = max(result[0], key=lambda x: x["score"])
+        # HF returns list of list
+        predictions = result[0]
+        best = max(predictions, key=lambda x: x["score"])
+
         return {
             "category": best["label"],
-            "confidence": float(best["score"])
+            "confidence": round(float(best["score"]), 4)
         }
+
     except Exception:
         raise HTTPException(
             status_code=500,
