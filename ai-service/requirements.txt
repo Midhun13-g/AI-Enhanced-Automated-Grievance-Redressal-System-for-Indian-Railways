@@ -1,7 +1,4 @@
 fastapi
 uvicorn
-requests
-pydantic
-kafka-python
 transformers
-torch
+torch --index-url https://download.pytorch.org/whl/cpu  
