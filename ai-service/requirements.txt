@@ -1,7 +1,5 @@
 fastapi
 uvicorn
-transformers
+requests
 pydantic
 kafka-python
-requests
-torch
