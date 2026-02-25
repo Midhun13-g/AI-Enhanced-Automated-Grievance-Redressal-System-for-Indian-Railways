@@ -52,7 +52,10 @@ def health():
 def classify(data: ComplaintData):
     result = query_hf(data.text)
 
-    # Hugging Face returns list of label scores
+    # If HF returns error
+    if isinstance(result, dict) and "error" in result:
+        raise HTTPException(status_code=503, detail=result["error"])
+
     try:
         best = max(result[0], key=lambda x: x["score"])
         return {
@@ -60,4 +63,7 @@ def classify(data: ComplaintData):
             "confidence": float(best["score"])
         }
     except Exception:
-        return {"raw_response": result}
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected response format: {result}"
+        )
