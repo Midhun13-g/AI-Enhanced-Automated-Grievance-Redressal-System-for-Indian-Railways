@@ -146,14 +146,19 @@ public class ComplaintService {
 
     private ComplaintResponse toResponse(Complaint complaint) {
         ComplaintResponse resp = new ComplaintResponse();
+        String department = complaint.getDepartment();
+        if (department == null || department.isBlank() || "GENERAL".equalsIgnoreCase(department) || "General".equalsIgnoreCase(department)) {
+            department = inferDepartmentFromText(complaint.getComplaintText());
+        }
+
         resp.setId(complaint.getId());
         resp.setPassengerName(complaint.getPassengerName());
         resp.setComplaintText(complaint.getComplaintText());
-        resp.setCategory(complaint.getCategory());
+        resp.setCategory(department != null ? department : complaint.getCategory());
         resp.setUrgencyScore(complaint.getUrgencyScore());
         resp.setStatus(complaint.getStatus());
         resp.setStation(complaint.getStation());
-        resp.setDepartment(complaint.getDepartment());
+        resp.setDepartment(department);
         resp.setTrainNumber(complaint.getTrainNumber());
         resp.setIncidentAt(complaint.getIncidentAt());
         resp.setAssignedTo(complaint.getAssignedTo());
@@ -205,6 +210,17 @@ public class ComplaintService {
         } catch (Exception ex) {
             log.warn("AI enrichment failed due to unexpected response format. Continuing without enrichment.", ex);
         }
+
+        if (complaint.getDepartment() == null || complaint.getDepartment().isBlank()
+                || "GENERAL".equalsIgnoreCase(complaint.getDepartment())
+                || "General".equalsIgnoreCase(complaint.getDepartment())) {
+            String inferredDepartment = inferDepartmentFromText(complaint.getComplaintText());
+            complaint.setDepartment(inferredDepartment);
+            complaint.setCategory(inferredDepartment);
+            if (complaint.getUrgencyScore() == null || complaint.getUrgencyScore() <= 0) {
+                complaint.setUrgencyScore(mapPriorityToUrgency(inferPriorityFromDepartment(inferredDepartment)));
+            }
+        }
     }
 
     private String extractDepartment(Map<String, Object> payload) {
@@ -243,6 +259,62 @@ public class ComplaintService {
             return 70;
         }
         return 35;
+    }
+
+    private String inferPriorityFromDepartment(String department) {
+        if (department == null) {
+            return "low";
+        }
+        return switch (department) {
+            case "Medical", "Security" -> "high";
+            case "Electrical", "Coach", "Maintenance", "Water" -> "medium";
+            default -> "low";
+        };
+    }
+
+    private String inferDepartmentFromText(String text) {
+        if (text == null || text.isBlank()) {
+            return "General";
+        }
+        String normalized = text.toLowerCase();
+
+        if (containsAny(normalized, "security", "theft", "steal", "snatch", "rob", "fight", "harass", "unsafe", "police", "rpf", "sos")) {
+            return "Security";
+        }
+        if (containsAny(normalized, "medical", "doctor", "ambulance", "heart attack", "injury", "blood", "faint", "poison")) {
+            return "Medical";
+        }
+        if (containsAny(normalized, "water", "no water", "drinking", "tap", "toilet water")) {
+            return "Water";
+        }
+        if (containsAny(normalized, "clean", "dirty", "toilet", "restroom", "sanitation", "garbage", "smell")) {
+            return "Cleanliness";
+        }
+        if (containsAny(normalized, "food", "catering", "meal", "vendor")) {
+            return "Catering";
+        }
+        if (containsAny(normalized, "light", "fan", "charging", "socket", "electric", "power")) {
+            return "Electrical";
+        }
+        if (containsAny(normalized, "coach", "berth", "seat", "window", "door", "ac")) {
+            return "Coach";
+        }
+        if (containsAny(normalized, "ticket", "refund", "pnr", "reservation", "booking")) {
+            return "Ticketing";
+        }
+        if (containsAny(normalized, "repair", "maintenance", "broken", "damage", "leak")) {
+            return "Maintenance";
+        }
+        return "General";
+    }
+
+    private boolean containsAny(String text, String... keywords) {
+        for (String keyword : keywords) {
+            if (text.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String mapCategoryIndexToDepartment(int index) {

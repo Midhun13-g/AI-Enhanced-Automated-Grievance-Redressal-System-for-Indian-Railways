@@ -27,6 +27,7 @@ public class SuperAdminController {
         List<Map<String, Object>> users = userRepository.findAll().stream().map(u -> {
             Map<String, Object> m = new HashMap<>();
             m.put("id", u.getId());
+            m.put("userCode", toUserCode(u.getId()));
             m.put("username", u.getUsername());
             m.put("role", u.getRole());
             m.put("station", u.getStation());
@@ -66,6 +67,7 @@ public class SuperAdminController {
         Map<String, Object> res = new HashMap<>();
         res.put("message", "User created successfully");
         res.put("id", saved.getId());
+        res.put("userCode", toUserCode(saved.getId()));
         res.put("username", saved.getUsername());
         res.put("role", saved.getRole());
         res.put("station", saved.getStation());
@@ -84,6 +86,8 @@ public class SuperAdminController {
             Map<String, Object> res = new HashMap<>();
             res.put("message", "User updated");
             res.put("id", user.getId());
+            res.put("userCode", toUserCode(user.getId()));
+            res.put("username", user.getUsername());
             res.put("role", user.getRole());
             res.put("station", user.getStation());
             return ResponseEntity.ok(res);
@@ -113,5 +117,12 @@ public class SuperAdminController {
         stats.put("passengers",
                 all.stream().filter(u -> "USER".equals(u.getRole()) || "PASSENGER".equals(u.getRole())).count());
         return ResponseEntity.ok(stats);
+    }
+
+    private String toUserCode(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return String.format("USR-%06d", id);
     }
 }
