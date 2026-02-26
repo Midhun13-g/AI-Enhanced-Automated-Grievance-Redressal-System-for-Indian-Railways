@@ -55,7 +55,12 @@ const StationMasterDashboard = () => {
 
     const handleStatusUpdate = (id, newStatus) => {
         API.patch(`/complaints/${id}/status`, { newStatus })
-            .then((res) => setComplaints(c => c.map(comp => comp.id === id ? res.data : comp)))
+            .then((res) => {
+                setComplaints(c => c.map(comp => comp.id === id ? res.data : comp));
+                if (newStatus === "RESOLVED") {
+                    setEscalatedIds(prev => prev.filter(x => x !== id));
+                }
+            })
             .catch(() => { });
     };
 
@@ -99,10 +104,12 @@ const StationMasterDashboard = () => {
     );
 
     const sosComplaints = complaints.filter(c =>
-        (c.complaintText || "").toLowerCase().includes("sos") ||
-        (c.complaintText || "").toLowerCase().includes("emergency") ||
-        (c.complaintText || "").toLowerCase().includes("help") ||
-        (c.urgencyScore || 0) >= 8
+        c.status !== "RESOLVED" && (
+            (c.complaintText || "").toLowerCase().includes("sos") ||
+            (c.complaintText || "").toLowerCase().includes("emergency") ||
+            (c.complaintText || "").toLowerCase().includes("help") ||
+            (c.urgencyScore || 0) >= 8
+        )
     );
 
     const today = new Date().toISOString().split("T")[0];

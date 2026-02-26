@@ -37,6 +37,9 @@ jwt:
 app:
   kafka:
     enabled: ${APP_KAFKA_ENABLED:false}
+  ai:
+    enabled: ${APP_AI_ENABLED:true}
+    classifier-url: ${APP_AI_CLASSIFIER_URL:https://midhun-2542-railwaymodel.hf.space/classify}
   officer-signup-key: ${APP_OFFICER_SIGNUP_KEY:RAILMADAD_OFFICER_2026}
 
 logging:

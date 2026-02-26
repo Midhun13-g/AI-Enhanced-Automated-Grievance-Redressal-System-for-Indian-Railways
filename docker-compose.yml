@@ -32,6 +32,7 @@ services:
     container_name: backend
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      APP_AI_CLASSIFIER_URL: ${APP_AI_CLASSIFIER_URL:https://midhun-2542-railwaymodel.hf.space/classify}
       DB_URL: ${DB_URL}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}

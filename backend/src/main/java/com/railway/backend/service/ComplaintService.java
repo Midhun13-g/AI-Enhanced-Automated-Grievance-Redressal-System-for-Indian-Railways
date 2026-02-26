@@ -1,5 +1,7 @@
 package com.railway.backend.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.railway.backend.dto.ComplaintRequest;
 import com.railway.backend.dto.ComplaintResponse;
 import com.railway.backend.dto.StatusUpdateRequest;
@@ -13,10 +15,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+
+import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,8 +38,15 @@ public class ComplaintService {
     private final ComplaintHistoryRepository complaintHistoryRepository;
     private final UserRepository userRepository;
     private final KafkaTemplate<String, Long> kafkaTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final RestTemplate restTemplate = new RestTemplate();
+
     @Value("${app.kafka.enabled:false}")
     private boolean kafkaEnabled;
+    @Value("${app.ai.enabled:true}")
+    private boolean aiEnabled;
+    @Value("${app.ai.classifier-url:https://midhun-2542-railwaymodel.hf.space/classify}")
+    private String aiClassifierUrl;
 
     public List<ComplaintResponse> getAllComplaints() {
         return complaintRepository.findAllByOrderByUrgencyScoreDesc().stream()
@@ -87,6 +105,8 @@ public class ComplaintService {
                 .station(station)
                 .aiMetadata(null)
                 .build();
+
+        enrichWithAi(complaint);
         Complaint saved = complaintRepository.save(complaint);
         if (kafkaEnabled) {
             try {
@@ -142,5 +162,102 @@ public class ComplaintService {
         resp.setCreatedAt(complaint.getCreatedAt());
         resp.setUpdatedAt(complaint.getUpdatedAt());
         return resp;
+    }
+
+    private void enrichWithAi(Complaint complaint) {
+        if (!aiEnabled || complaint.getComplaintText() == null || complaint.getComplaintText().isBlank()) {
+            return;
+        }
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, String> requestBody = Map.of("text", complaint.getComplaintText());
+            HttpEntity<Map<String, String>> request = new HttpEntity<>(requestBody, headers);
+
+            String responseBody = restTemplate.postForObject(URI.create(aiClassifierUrl), request, String.class);
+            if (responseBody == null || responseBody.isBlank()) {
+                return;
+            }
+
+            Map<String, Object> payload = objectMapper.readValue(responseBody, new TypeReference<Map<String, Object>>() {
+            });
+            String department = extractDepartment(payload);
+            String priority = extractPriority(payload);
+            Integer urgencyScore = mapPriorityToUrgency(priority);
+
+            if (department != null && !department.isBlank()) {
+                complaint.setDepartment(department);
+                complaint.setCategory(department);
+            }
+            complaint.setUrgencyScore(urgencyScore);
+
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put("classifierUrl", aiClassifierUrl);
+            metadata.put("raw", payload);
+            metadata.put("department", department);
+            metadata.put("priority", priority);
+            metadata.put("urgencyScore", urgencyScore);
+            complaint.setAiMetadata(objectMapper.writeValueAsString(metadata));
+        } catch (RestClientException ex) {
+            log.warn("AI service unavailable for complaint classification. Continuing without enrichment.", ex);
+        } catch (Exception ex) {
+            log.warn("AI enrichment failed due to unexpected response format. Continuing without enrichment.", ex);
+        }
+    }
+
+    private String extractDepartment(Map<String, Object> payload) {
+        Object department = payload.get("department");
+        if (department instanceof String value && !value.isBlank()) {
+            return value.trim();
+        }
+
+        Object category = payload.get("category");
+        if (category == null) {
+            return null;
+        }
+
+        String label = category.toString().trim();
+        try {
+            int idx = Integer.parseInt(label);
+            return mapCategoryIndexToDepartment(idx);
+        } catch (NumberFormatException ignored) {
+            return label.isBlank() ? null : label;
+        }
+    }
+
+    private String extractPriority(Map<String, Object> payload) {
+        Object priority = payload.get("priority");
+        if (priority instanceof String value && !value.isBlank()) {
+            return value.trim().toLowerCase();
+        }
+        return null;
+    }
+
+    private Integer mapPriorityToUrgency(String priority) {
+        if ("high".equals(priority)) {
+            return 95;
+        }
+        if ("medium".equals(priority)) {
+            return 70;
+        }
+        return 35;
+    }
+
+    private String mapCategoryIndexToDepartment(int index) {
+        return switch (index) {
+            case 0 -> "Catering";
+            case 1 -> "Cleanliness";
+            case 2 -> "Coach";
+            case 3 -> "Electrical";
+            case 4 -> "General";
+            case 5 -> "Maintenance";
+            case 6 -> "Medical";
+            case 7 -> "Security";
+            case 8 -> "Ticketing";
+            case 9 -> "Water";
+            default -> "General";
+        };
     }
 }

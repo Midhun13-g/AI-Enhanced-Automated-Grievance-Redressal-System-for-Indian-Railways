@@ -49,10 +49,12 @@ const AdminDashboard = () => {
     });
 
     const sosComplaints = complaints.filter(c =>
-        (c.complaintText || "").toLowerCase().includes("sos") ||
-        (c.complaintText || "").toLowerCase().includes("emergency") ||
-        (c.complaintText || "").toLowerCase().includes("help") ||
-        c.urgencyScore >= 8
+        c.status !== "RESOLVED" && (
+            (c.complaintText || "").toLowerCase().includes("sos") ||
+            (c.complaintText || "").toLowerCase().includes("emergency") ||
+            (c.complaintText || "").toLowerCase().includes("help") ||
+            c.urgencyScore >= 8
+        )
     );
 
     const handleAddOfficer = (e) => {
