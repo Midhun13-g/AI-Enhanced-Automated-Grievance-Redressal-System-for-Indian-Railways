@@ -49,6 +49,7 @@ services:
     build: ./ai-service
     container_name: ai-service
     environment:
+      MODEL_API_BASE_URL: ${MODEL_API_BASE_URL:https://midhun-2542-railwaymodel.hf.space}
       KAFKA_BROKER: kafka:9092
       KAFKA_TOPIC: complaint-classification
       BACKEND_URL: http://backend:8080/complaints/
