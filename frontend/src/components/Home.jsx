@@ -10,6 +10,7 @@ const Home = () => {
     const user = context?.user;
     const logoutFn = context?.logout;
     const [helpline, setHelpline] = useState({ number: "139", description: "for Security/Medical Assistance" });
+    const displayName = user?.fullName || "User";
 
     const handleLogout = () => {
         logoutFn();
@@ -34,7 +35,7 @@ const Home = () => {
             <div className="max-w-7xl mx-auto px-4 py-12">
                 <div className="text-center mb-12">
                     <h1 className="text-4xl font-bold text-gray-800 mb-4">
-                        Welcome to RailMadad, {user?.username}!
+                        Welcome to RailMadad, {displayName}!
                     </h1>
                     <p className="text-xl text-gray-600">
                         Your one-stop solution for railway grievance redressal

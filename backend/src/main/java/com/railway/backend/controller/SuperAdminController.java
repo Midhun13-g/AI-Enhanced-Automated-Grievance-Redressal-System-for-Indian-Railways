@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -27,9 +28,10 @@ public class SuperAdminController {
         List<Map<String, Object>> users = userRepository.findAll().stream().map(u -> {
             Map<String, Object> m = new HashMap<>();
             m.put("id", u.getId());
-            m.put("userCode", toUserCode(u.getId()));
+            m.put("userCode", resolveUniqueCode(u));
             m.put("username", u.getUsername());
             m.put("role", u.getRole());
+            m.put("staffId", u.getStaffId());
             m.put("station", u.getStation());
             m.put("createdAt", u.getCreatedAt());
             return m;
@@ -56,10 +58,12 @@ public class SuperAdminController {
             return ResponseEntity.badRequest().body(err);
         }
 
+        String normalizedRole = role.toUpperCase();
         User user = User.builder()
                 .username(email.toLowerCase())
                 .password(passwordEncoder.encode(password))
-                .role(role.toUpperCase())
+                .role(normalizedRole)
+                .staffId("STATION_STAFF".equals(normalizedRole) ? generateUniqueStaffId() : null)
                 .station(stationName)
                 .build();
         User saved = userRepository.save(user);
@@ -67,9 +71,10 @@ public class SuperAdminController {
         Map<String, Object> res = new HashMap<>();
         res.put("message", "User created successfully");
         res.put("id", saved.getId());
-        res.put("userCode", toUserCode(saved.getId()));
+        res.put("userCode", resolveUniqueCode(saved));
         res.put("username", saved.getUsername());
         res.put("role", saved.getRole());
+        res.put("staffId", saved.getStaffId());
         res.put("station", saved.getStation());
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
@@ -78,17 +83,23 @@ public class SuperAdminController {
     @PatchMapping("/users/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody Map<String, String> body) {
         return userRepository.findById(id).map(user -> {
-            if (body.containsKey("role"))
-                user.setRole(body.get("role").toUpperCase());
+            if (body.containsKey("role")) {
+                String updatedRole = body.get("role").toUpperCase();
+                user.setRole(updatedRole);
+                if ("STATION_STAFF".equals(updatedRole) && (user.getStaffId() == null || user.getStaffId().isBlank())) {
+                    user.setStaffId(generateUniqueStaffId());
+                }
+            }
             if (body.containsKey("stationName"))
                 user.setStation(body.get("stationName"));
             userRepository.save(user);
             Map<String, Object> res = new HashMap<>();
             res.put("message", "User updated");
             res.put("id", user.getId());
-            res.put("userCode", toUserCode(user.getId()));
+            res.put("userCode", resolveUniqueCode(user));
             res.put("username", user.getUsername());
             res.put("role", user.getRole());
+            res.put("staffId", user.getStaffId());
             res.put("station", user.getStation());
             return ResponseEntity.ok(res);
         }).orElse(ResponseEntity.notFound().build());
@@ -119,10 +130,26 @@ public class SuperAdminController {
         return ResponseEntity.ok(stats);
     }
 
+    private String resolveUniqueCode(User user) {
+        if ("STATION_STAFF".equals(user.getRole()) && user.getStaffId() != null && !user.getStaffId().isBlank()) {
+            return user.getStaffId();
+        }
+        return toUserCode(user.getId());
+    }
+
     private String toUserCode(Long id) {
         if (id == null) {
             return null;
         }
         return String.format("USR-%06d", id);
+    }
+
+    private String generateUniqueStaffId() {
+        String staffId;
+        do {
+            String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+            staffId = "STF-" + suffix;
+        } while (userRepository.existsByStaffId(staffId));
+        return staffId;
     }
 }

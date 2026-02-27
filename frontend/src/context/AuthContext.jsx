@@ -12,19 +12,27 @@ export const AuthProvider = ({ children }) => {
             const role = localStorage.getItem("role") || "USER";
             const stationName = localStorage.getItem("stationName") || "";
             const username = localStorage.getItem("username") || "";
-            setUser({ token, role, stationName, username });
+            const fullName = localStorage.getItem("fullName") || "";
+            setUser({ token, role, stationName, username, fullName });
         } else {
             setUser(null);
         }
     }, [token]);
 
-    const login = (token, role, stationName, username) => {
+    const login = (token, role, stationName, username, fullName) => {
         setToken(token);
         localStorage.setItem("token", token);
         localStorage.setItem("role", role);
         if (stationName) localStorage.setItem("stationName", stationName);
         if (username) localStorage.setItem("username", username);
-        setUser({ token, role, stationName: stationName || "", username: username || "" });
+        if (fullName) localStorage.setItem("fullName", fullName);
+        setUser({
+            token,
+            role,
+            stationName: stationName || "",
+            username: username || "",
+            fullName: fullName || "",
+        });
     };
 
     const logout = () => {
@@ -33,6 +41,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("role");
         localStorage.removeItem("stationName");
         localStorage.removeItem("username");
+        localStorage.removeItem("fullName");
         setUser(null);
     };
 

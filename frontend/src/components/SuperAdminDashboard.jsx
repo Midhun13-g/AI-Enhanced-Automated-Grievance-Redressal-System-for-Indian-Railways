@@ -63,8 +63,9 @@ const SuperAdminDashboard = () => {
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            await API.post("/superadmin/users", newUser);
-            setCreateMsg({ text: `Success: ${newUser.role} account created for ${newUser.email}`, type: "success" });
+            const res = await API.post("/superadmin/users", newUser);
+            const uniqueCode = res.data?.userCode ? ` (ID: ${res.data.userCode})` : "";
+            setCreateMsg({ text: `Success: ${newUser.role} account created for ${newUser.email}${uniqueCode}`, type: "success" });
             setNewUser({ email: "", password: "", role: "USER", stationName: "" });
             refreshUsers();
         } catch (err) {

@@ -14,6 +14,15 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const successMessage = location.state?.message;
 
+    const fallbackNameFromEmail = (value) => {
+        const localPart = (value || "").split("@")[0];
+        return localPart
+            .split(/[._-]+/)
+            .filter(Boolean)
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ") || "User";
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
@@ -21,7 +30,13 @@ const Login = () => {
         try {
             const normalizedEmail = email.trim().toLowerCase();
             const res = await API.post("/auth/login", { email: normalizedEmail, password });
-            login(res.data.token, res.data.role, res.data.stationName || "", res.data.email || normalizedEmail);
+            login(
+                res.data.token,
+                res.data.role,
+                res.data.stationName || "",
+                res.data.email || normalizedEmail,
+                res.data.fullName || fallbackNameFromEmail(normalizedEmail)
+            );
             navigate("/");
         } catch (err) {
             setError(err.response?.data?.message || "Invalid credentials");

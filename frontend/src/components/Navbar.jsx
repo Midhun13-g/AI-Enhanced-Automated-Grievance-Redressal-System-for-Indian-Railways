@@ -4,6 +4,7 @@ import { AuthContext } from "../context/AuthContext";
 const Navbar = ({ onLogout }) => {
     const context = useContext(AuthContext);
     const user = context?.user;
+    const displayName = user?.fullName || "User";
 
     return (
         <nav className="bg-gradient-to-r from-orange-600 to-orange-500 shadow-lg">
@@ -19,7 +20,7 @@ const Navbar = ({ onLogout }) => {
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                        <span className="text-white text-sm">Welcome, {user?.role || "User"}</span>
+                        <span className="text-white text-sm">Welcome, {displayName}</span>
                         <button
                             onClick={onLogout}
                             className="bg-white text-orange-600 px-4 py-2 rounded-md hover:bg-orange-50 font-semibold text-sm"

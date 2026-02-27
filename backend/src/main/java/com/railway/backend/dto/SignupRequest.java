@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SignupRequest {
+    private String fullName;
     private String email;
     private String password;
     private String role; // USER, STATION_MASTER, STATION_STAFF, RPF_ADMIN, SUPER_ADMIN

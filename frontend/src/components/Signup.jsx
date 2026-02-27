@@ -4,6 +4,7 @@ import API from "../api";
 
 const Signup = () => {
     const navigate = useNavigate();
+    const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -25,6 +26,12 @@ const Signup = () => {
         e.preventDefault();
         setError("");
         setMessage("");
+        const normalizedFullName = fullName.trim().replace(/\s+/g, " ");
+
+        if (normalizedFullName.length < 2) {
+            setError("Enter your full name");
+            return;
+        }
 
         if (!isValidEmail(normalizedEmail)) {
             setError("Enter a valid email address");
@@ -49,6 +56,7 @@ const Signup = () => {
         setLoading(true);
         try {
             await API.post("/auth/signup", {
+                fullName: normalizedFullName,
                 email: normalizedEmail,
                 password,
                 role,
@@ -95,6 +103,17 @@ const Signup = () => {
                         </div>
                     )}
                     <form onSubmit={handleSubmit}>
+                        <div className="mb-4">
+                            <label className="block text-gray-700 font-semibold mb-2">Full Name</label>
+                            <input
+                                type="text"
+                                placeholder="Enter your full name"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
+                            />
+                        </div>
                         <div className="mb-4">
                             <label className="block text-gray-700 font-semibold mb-2">Email</label>
                             <input

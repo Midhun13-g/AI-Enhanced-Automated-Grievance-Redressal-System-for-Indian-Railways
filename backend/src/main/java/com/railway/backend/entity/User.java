@@ -24,6 +24,12 @@ public class User {
     @Column(nullable = false)
     private String role;
 
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(name = "staff_id", unique = true, length = 24)
+    private String staffId;
+
     @Column(name = "station")
     private String station;
 
