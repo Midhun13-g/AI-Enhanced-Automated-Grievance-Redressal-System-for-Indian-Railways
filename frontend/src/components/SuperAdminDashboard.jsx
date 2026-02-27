@@ -34,6 +34,8 @@ const SuperAdminDashboard = () => {
     const [editData, setEditData] = useState({});
     const [searchTerm, setSearchTerm] = useState("");
     const [filterRole, setFilterRole] = useState("");
+    const [complaintStatusFilter, setComplaintStatusFilter] = useState("ALL");
+    const [complaintDeptFilter, setComplaintDeptFilter] = useState("");
 
     const handleLogout = () => {
         logout();
@@ -116,6 +118,14 @@ const SuperAdminDashboard = () => {
         const deptB = (b.department || b.category || "zzz").toLowerCase();
         if (deptA !== deptB) return deptA.localeCompare(deptB);
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    });
+    const complaintDepartments = Array.from(
+        new Set(complaints.map(c => c.department || c.category).filter(Boolean))
+    ).sort((a, b) => a.localeCompare(b));
+    const filteredComplaints = sortedComplaints.filter((c) => {
+        const statusOk = complaintStatusFilter === "ALL" ? true : c.status === complaintStatusFilter;
+        const deptOk = complaintDeptFilter ? (c.department || c.category || "") === complaintDeptFilter : true;
+        return statusOk && deptOk;
     });
 
     const resolutionRate = complaints.length
@@ -306,10 +316,45 @@ const SuperAdminDashboard = () => {
                             <div className="p-5 border-b flex justify-between items-center">
                                 <h3 className="font-bold text-gray-800">All System Complaints</h3>
                                 <div className="flex gap-3 text-sm">
-                                    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">Pending: {complaints.filter(c => c.status === "PENDING").length}</span>
-                                    <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-semibold">In Progress: {complaints.filter(c => c.status === "IN_PROGRESS").length}</span>
-                                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">Resolved: {complaints.filter(c => c.status === "RESOLVED").length}</span>
+                                    <button onClick={() => setComplaintStatusFilter("PENDING")} className="bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">Pending: {complaints.filter(c => c.status === "PENDING").length}</button>
+                                    <button onClick={() => setComplaintStatusFilter("IN_PROGRESS")} className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-semibold">In Progress: {complaints.filter(c => c.status === "IN_PROGRESS").length}</button>
+                                    <button onClick={() => setComplaintStatusFilter("RESOLVED")} className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">Resolved: {complaints.filter(c => c.status === "RESOLVED").length}</button>
                                 </div>
+                            </div>
+                            <div className="px-5 py-3 border-b flex flex-wrap items-center gap-3">
+                                <button
+                                    onClick={() => setComplaintStatusFilter("ALL")}
+                                    className={`px-3 py-1 rounded text-xs font-semibold ${complaintStatusFilter === "ALL" ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"}`}
+                                >
+                                    All
+                                </button>
+                                <button
+                                    onClick={() => setComplaintStatusFilter("PENDING")}
+                                    className={`px-3 py-1 rounded text-xs font-semibold ${complaintStatusFilter === "PENDING" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}`}
+                                >
+                                    Pending
+                                </button>
+                                <button
+                                    onClick={() => setComplaintStatusFilter("IN_PROGRESS")}
+                                    className={`px-3 py-1 rounded text-xs font-semibold ${complaintStatusFilter === "IN_PROGRESS" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600"}`}
+                                >
+                                    In Progress
+                                </button>
+                                <button
+                                    onClick={() => setComplaintStatusFilter("RESOLVED")}
+                                    className={`px-3 py-1 rounded text-xs font-semibold ${complaintStatusFilter === "RESOLVED" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
+                                >
+                                    Resolved
+                                </button>
+                                <select
+                                    value={complaintDeptFilter}
+                                    onChange={e => setComplaintDeptFilter(e.target.value)}
+                                    className="border border-gray-300 rounded px-2 py-1 text-xs"
+                                >
+                                    <option value="">All Departments</option>
+                                    {complaintDepartments.map(d => <option key={d} value={d}>{d}</option>)}
+                                </select>
+                                <span className="text-xs text-gray-500 ml-auto">{filteredComplaints.length} results</span>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full text-sm">
@@ -328,9 +373,9 @@ const SuperAdminDashboard = () => {
                                     <tbody>
                                         {loading ? (
                                             <tr><td colSpan="8" className="py-8 text-center text-gray-400">Loading...</td></tr>
-                                        ) : sortedComplaints.length === 0 ? (
+                                        ) : filteredComplaints.length === 0 ? (
                                             <tr><td colSpan="8" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
-                                        ) : sortedComplaints.map(c => (
+                                        ) : filteredComplaints.map(c => (
                                             <tr key={c.id} className="border-b hover:bg-purple-50">
                                                 <td className="py-3 px-4 text-purple-600 font-semibold">#{c.id}</td>
                                                 <td className="py-3 px-4">{c.passengerName}</td>
