@@ -28,14 +28,11 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-<<<<<<< HEAD
-import java.util.Optional;
-=======
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
->>>>>>> 31ac9446b918257fbd2b929db730a8b441f71e52
 import java.util.stream.Collectors;
 
 @Service
@@ -130,7 +127,12 @@ public class ComplaintService {
     }
 
     public List<ComplaintResponse> getComplaintsByStation(String station) {
-        return complaintRepository.findByStation(station).stream()
+        if (station == null || station.isBlank()) {
+            return complaintRepository.findAllByOrderByUrgencyScoreDesc().stream()
+                    .map(this::toResponse)
+                    .collect(Collectors.toList());
+        }
+        return complaintRepository.findByStationContext(station.trim()).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -151,34 +153,21 @@ public class ComplaintService {
         String passengerName = request.getPassengerName();
 
         if (auth != null && auth.getName() != null) {
-<<<<<<< HEAD
             createdByUsername = auth.getName();
-            Optional<User> submittingUser = userRepository.findByUsername(createdByUsername);
-            station = submittingUser.map(User::getStation).orElse(null);
-            if (submittingUser.isPresent() && "USER".equalsIgnoreCase(submittingUser.get().getRole())) {
-                String fullName = submittingUser.get().getFullName();
-                if (fullName != null && !fullName.isBlank()) {
-                    passengerName = fullName;
-                } else {
-                    passengerName = createdByUsername;
-                }
+            user = userRepository.findByUsername(createdByUsername).orElse(null);
+            station = user != null ? normalizeName(user.getStation()) : null;
+            if (isPassenger(user)) {
+                passengerName = resolvePassengerDisplayName(user);
             }
-=======
-            user = userRepository.findByUsername(auth.getName()).orElse(null);
-            station = user != null ? user.getStation() : null;
         }
-        String passengerName = request.getPassengerName();
-        if (isPassenger(user)) {
-            passengerName = resolvePassengerDisplayName(user);
->>>>>>> 31ac9446b918257fbd2b929db730a8b441f71e52
+        if (passengerName == null || passengerName.isBlank()) {
+            passengerName = user != null ? resolvePassengerDisplayName(user) : "User";
         }
 
         Complaint complaint = Complaint.builder()
                 .passengerName(passengerName)
-<<<<<<< HEAD
+                .passengerPhone(normalizePhone(request.getPassengerPhone()))
                 .createdByUsername(createdByUsername)
-=======
->>>>>>> 31ac9446b918257fbd2b929db730a8b441f71e52
                 .complaintText(request.getComplaintText())
                 .trainNumber(request.getTrainNumber())
                 .incidentAt(request.getIncidentAt())
@@ -186,6 +175,8 @@ public class ComplaintService {
                 .status("PENDING")
                 .urgencyScore(0)
                 .station(station)
+                .previousStation(normalizeName(request.getPreviousStation()))
+                .nextStation(normalizeName(request.getNextStation()))
                 .aiMetadata(null)
                 .build();
 
@@ -206,9 +197,18 @@ public class ComplaintService {
         Complaint complaint = complaintRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Complaint not found"));
         String oldStatus = complaint.getStatus();
-        complaint.setStatus(request.getNewStatus());
-        Complaint updated = complaintRepository.save(complaint);
         User user = userRepository.findByUsername(auth.getName()).orElseThrow();
+
+        complaint.setStatus(request.getNewStatus());
+        if ("RESOLVED".equalsIgnoreCase(request.getNewStatus())) {
+            complaint.setResolvedBy(resolveUserDisplayName(user));
+            complaint.setResolvedByRole(user.getRole());
+        } else {
+            complaint.setResolvedBy(null);
+            complaint.setResolvedByRole(null);
+        }
+
+        Complaint updated = complaintRepository.save(complaint);
         ComplaintHistory history = ComplaintHistory.builder()
                 .complaint(complaint)
                 .oldStatus(oldStatus)
@@ -236,16 +236,21 @@ public class ComplaintService {
 
         resp.setId(complaint.getId());
         resp.setPassengerName(complaint.getPassengerName());
+        resp.setPassengerPhone(complaint.getPassengerPhone());
         resp.setComplaintText(complaint.getComplaintText());
         resp.setCategory(department != null ? department : complaint.getCategory());
         resp.setUrgencyScore(complaint.getUrgencyScore());
         resp.setStatus(complaint.getStatus());
         resp.setStation(complaint.getStation());
+        resp.setPreviousStation(complaint.getPreviousStation());
+        resp.setNextStation(complaint.getNextStation());
         resp.setDepartment(department);
         resp.setTrainNumber(complaint.getTrainNumber());
         resp.setIncidentAt(complaint.getIncidentAt());
         resp.setAssignedTo(complaint.getAssignedTo());
         resp.setRemarks(complaint.getRemarks());
+        resp.setResolvedBy(complaint.getResolvedBy());
+        resp.setResolvedByRole(complaint.getResolvedByRole());
         resp.setAiMetadata(complaint.getAiMetadata());
         resp.setCreatedAt(complaint.getCreatedAt());
         resp.setUpdatedAt(complaint.getUpdatedAt());
@@ -455,5 +460,25 @@ public class ComplaintService {
         }
         String normalized = value.trim().replaceAll("\\s+", " ");
         return normalized.isBlank() ? null : normalized;
+    }
+
+    private String normalizePhone(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim().replaceAll("\\s+", "");
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private String resolveUserDisplayName(User user) {
+        if (user == null) {
+            return "System";
+        }
+        String fullName = normalizeName(user.getFullName());
+        if (fullName != null) {
+            return fullName;
+        }
+        String username = normalizeName(user.getUsername());
+        return username != null ? username : "System";
     }
 }

@@ -40,8 +40,8 @@ const StaffDashboard = () => {
 
     const handleStatusUpdate = (id, newStatus) => {
         API.patch(`/complaints/${id}/status`, { newStatus })
-            .then(() => {
-                setComplaints(c => c.map(comp => comp.id === id ? { ...comp, status: newStatus } : comp));
+            .then((res) => {
+                setComplaints(c => c.map(comp => comp.id === id ? res.data : comp));
                 showSuccess("Status updated!");
             })
             .catch(() => { });
@@ -222,6 +222,7 @@ const StaffDashboard = () => {
                                                 <th className="py-3 px-4 text-left">Complaint</th>
                                                 <th className="py-3 px-4 text-left">Passenger</th>
                                                 <th className="py-3 px-4 text-left">Department</th>
+                                                <th className="py-3 px-4 text-left">Resolved By</th>
                                                 <th className="py-3 px-4 text-left">Remarks</th>
                                                 <th className="py-3 px-4 text-left">Date</th>
                                             </tr>
@@ -232,7 +233,9 @@ const StaffDashboard = () => {
                                                     <td className="py-3 px-4 text-indigo-600 font-semibold">#{c.id}</td>
                                                     <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
                                                     <td className="py-3 px-4">{c.passengerName}</td>
-                                                    <td className="py-3 px-4 text-gray-400">{c.department || "—"}</td>
+                                                    <td className="py-3 px-4 text-gray-400">{c.department || "—"}</td>                                                    <td className="py-3 px-4 text-gray-500 text-xs">
+                                                        {c.resolvedBy ? `${c.resolvedBy}${c.resolvedByRole ? ` (${c.resolvedByRole})` : ""}` : "�"}
+                                                    </td>
                                                     <td className="py-3 px-4 text-gray-500 italic text-xs">{c.remarks || "—"}</td>
                                                     <td className="py-3 px-4 text-gray-400">{c.updatedAt?.split("T")[0]}</td>
                                                 </tr>
@@ -287,3 +290,4 @@ const StaffDashboard = () => {
 };
 
 export default StaffDashboard;
+

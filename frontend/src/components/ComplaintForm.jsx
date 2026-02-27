@@ -9,9 +9,12 @@ const ComplaintForm = () => {
     const { user, logout: logoutFn } = useContext(AuthContext);
 
     const [passengerName, setPassengerName] = useState("");
+    const [passengerPhone, setPassengerPhone] = useState("");
     const [complaintText, setComplaintText] = useState("");
     const [trainNumber, setTrainNumber] = useState("");
     const [incidentAt, setIncidentAt] = useState("");
+    const [previousStation, setPreviousStation] = useState("");
+    const [nextStation, setNextStation] = useState("");
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
@@ -52,16 +55,22 @@ const ComplaintForm = () => {
         try {
             await API.post("/complaints", {
                 passengerName,
+                passengerPhone,
                 complaintText,
                 trainNumber,
                 incidentAt,
+                previousStation,
+                nextStation,
                 category: "GENERAL",
             });
             setSuccess("Complaint submitted successfully!");
             setPassengerName(isPassengerUser ? autoPassengerName : "");
+            setPassengerPhone("");
             setComplaintText("");
             setTrainNumber("");
             setIncidentAt("");
+            setPreviousStation("");
+            setNextStation("");
             setTimeout(() => {
                 navigate("/complaints");
             }, 2000);
@@ -112,6 +121,19 @@ const ComplaintForm = () => {
                             </div>
                         </div>
                         <div>
+                            <label className="block text-gray-700 font-semibold mb-2">Passenger Contact Number <span className="text-orange-600">*</span></label>
+                            <input
+                                type="tel"
+                                placeholder="e.g. 9876543210"
+                                value={passengerPhone}
+                                onChange={(e) => setPassengerPhone(e.target.value)}
+                                pattern="^[0-9]{10,15}$"
+                                title="Enter 10 to 15 digits"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                required
+                            />
+                        </div>
+                        <div>
                             <label className="block text-gray-700 font-semibold mb-2">Train Number <span className="text-orange-600">*</span></label>
                             <input
                                 type="text"
@@ -131,6 +153,30 @@ const ComplaintForm = () => {
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 required
                             />
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-gray-700 font-semibold mb-2">Previous Station <span className="text-orange-600">*</span></label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Nashik Road"
+                                    value={previousStation}
+                                    onChange={(e) => setPreviousStation(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-gray-700 font-semibold mb-2">Next Station <span className="text-orange-600">*</span></label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Mumbai CSMT"
+                                    value={nextStation}
+                                    onChange={(e) => setNextStation(e.target.value)}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                    required
+                                />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-gray-700 font-semibold mb-2">Complaint Details <span className="text-orange-600">*</span></label>

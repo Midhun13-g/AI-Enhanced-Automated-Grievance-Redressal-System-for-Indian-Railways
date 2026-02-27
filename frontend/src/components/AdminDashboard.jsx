@@ -48,13 +48,27 @@ const AdminDashboard = () => {
         return matchStatus && matchDept;
     });
 
-    const sosComplaints = complaints.filter(c =>
-        c.status !== "RESOLVED" && (
-            (c.complaintText || "").toLowerCase().includes("sos") ||
-            (c.complaintText || "").toLowerCase().includes("emergency") ||
-            (c.complaintText || "").toLowerCase().includes("help") ||
-            c.urgencyScore >= 8
-        )
+    const isHighEmergency = (complaint) => {
+        const text = (complaint.complaintText || "").toLowerCase();
+        const highRiskKeyword =
+            text.includes("sos") ||
+            text.includes("emergency") ||
+            text.includes("attack") ||
+            text.includes("assault") ||
+            text.includes("harass") ||
+            text.includes("theft") ||
+            text.includes("snatch") ||
+            text.includes("fight") ||
+            text.includes("weapon") ||
+            text.includes("fire") ||
+            text.includes("bomb") ||
+            text.includes("medical emergency");
+        const highUrgency = (complaint.urgencyScore || 0) >= 80;
+        return highUrgency && highRiskKeyword;
+    };
+
+    const sosComplaints = complaints.filter(
+        (c) => c.status !== "RESOLVED" && isHighEmergency(c)
     );
 
     const handleAddOfficer = (e) => {

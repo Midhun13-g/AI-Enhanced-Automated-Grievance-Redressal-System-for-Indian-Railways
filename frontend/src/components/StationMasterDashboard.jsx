@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+﻿import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 import { AuthContext } from "../context/AuthContext";
@@ -394,14 +394,17 @@ const StationMasterDashboard = () => {
                                             <div className="mt-3 flex gap-4 text-sm text-gray-500">
                                                 <span>📅 {c.createdAt?.split("T")[0]}</span>
                                                 <span>🚉 {c.station || stationName}</span>
-                                                <span>📞 Contact passenger immediately</span>
+                                                <span>📞 {c.passengerPhone || "No contact number"}</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-2 ml-6">
-                                            <button onClick={() => handleStatusUpdate(c.id, "IN_PROGRESS")}
-                                                className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-yellow-600 font-semibold">
+                                            <a
+                                                href={c.passengerPhone ? `tel:${c.passengerPhone}` : undefined}
+                                                onClick={() => handleStatusUpdate(c.id, "IN_PROGRESS")}
+                                                className={`text-center px-4 py-2 rounded-lg text-sm font-semibold ${c.passengerPhone ? "bg-yellow-500 text-white hover:bg-yellow-600" : "bg-gray-300 text-gray-600 cursor-not-allowed"}`}
+                                            >
                                                 📞 Contact Passenger
-                                            </button>
+                                            </a>
                                             <button onClick={() => handleEscalate(c.id)}
                                                 className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 font-semibold">
                                                 ↑ Notify RPF

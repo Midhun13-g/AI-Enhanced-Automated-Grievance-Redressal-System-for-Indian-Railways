@@ -11,10 +11,14 @@ public class ComplaintRequest {
     @NotBlank
     private String passengerName;
     @NotBlank
+    private String passengerPhone;
+    @NotBlank
     private String complaintText;
     @NotBlank
     private String trainNumber;
     @NotNull
     private LocalDateTime incidentAt;
+    private String previousStation;
+    private String nextStation;
     private String category;
 }

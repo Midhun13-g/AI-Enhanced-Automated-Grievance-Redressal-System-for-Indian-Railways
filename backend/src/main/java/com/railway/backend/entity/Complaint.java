@@ -21,6 +21,9 @@ public class Complaint {
     @Column(name = "passenger_name", nullable = false)
     private String passengerName;
 
+    @Column(name = "passenger_phone")
+    private String passengerPhone;
+
     @Column(name = "created_by_username")
     private String createdByUsername;
 
@@ -36,6 +39,12 @@ public class Complaint {
     @Column(name = "station")
     private String station;
 
+    @Column(name = "previous_station")
+    private String previousStation;
+
+    @Column(name = "next_station")
+    private String nextStation;
+
     @Column(name = "department")
     private String department;
 
@@ -50,6 +59,12 @@ public class Complaint {
 
     @Column(name = "remarks", columnDefinition = "TEXT")
     private String remarks;
+
+    @Column(name = "resolved_by")
+    private String resolvedBy;
+
+    @Column(name = "resolved_by_role")
+    private String resolvedByRole;
 
     @Column(nullable = false)
     private String status;

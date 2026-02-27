@@ -19,7 +19,11 @@ public class AnalyticsController {
     public Map<String, Long> getComplaintsByDepartment() {
         Map<String, Long> result = new HashMap<>();
         for (Object[] row : complaintRepository.countComplaintsByDepartment()) {
-            result.put((String) row[0], (Long) row[1]);
+            String department = row[0] == null || row[0].toString().isBlank()
+                    ? "General"
+                    : row[0].toString().trim();
+            long count = row[1] instanceof Number ? ((Number) row[1]).longValue() : 0L;
+            result.put(department, count);
         }
         return result;
     }
