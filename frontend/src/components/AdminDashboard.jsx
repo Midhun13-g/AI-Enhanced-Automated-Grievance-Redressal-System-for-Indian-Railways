@@ -85,6 +85,31 @@ const AdminDashboard = () => {
     const resolutionRate = complaints.length
         ? Math.round((complaints.filter(c => c.status === "RESOLVED").length / complaints.length) * 100)
         : 0;
+    const recentComplaints = [...complaints]
+        .sort((a, b) => {
+            const aTime = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+            if (aTime !== bTime) return bTime - aTime;
+            return (b?.id || 0) - (a?.id || 0);
+        })
+        .slice(0, 5);
+    const officerRows = officers.map((o) => {
+        const email = o.email || o.username || "";
+        const displayName = (o.fullName && o.fullName.trim())
+            || (email ? email.split("@")[0] : "Officer");
+        const activeCases = complaints.filter(
+            (c) => c.assignedTo === o.username && c.status !== "RESOLVED"
+        ).length;
+
+        return {
+            id: o.id,
+            displayName,
+            badge: o.badge || `RPF-${o.id}`,
+            email: email || "—",
+            station: (o.station || "").trim() || "Unassigned",
+            activeCases,
+        };
+    });
 
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden">
@@ -175,7 +200,7 @@ const AdminDashboard = () => {
                                         <tbody>
                                             {loading ? (
                                                 <tr><td colSpan="5" className="py-6 text-center text-gray-400">Loading...</td></tr>
-                                            ) : complaints.slice(0, 5).map(c => (
+                                            ) : recentComplaints.map(c => (
                                                 <tr key={c.id} className="border-b hover:bg-orange-50">
                                                     <td className="py-3 px-4 text-orange-600 font-semibold">#{c.id}</td>
                                                     <td className="py-3 px-4">{c.passengerName}</td>
@@ -325,16 +350,18 @@ const AdminDashboard = () => {
                                             <th className="py-3 px-4 text-left">Name</th>
                                             <th className="py-3 px-4 text-left">Badge</th>
                                             <th className="py-3 px-4 text-left">Email</th>
+                                            <th className="py-3 px-4 text-left">Station</th>
                                             <th className="py-3 px-4 text-left">Active Cases</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {officers.map(o => (
+                                        {officerRows.map(o => (
                                             <tr key={o.id} className="border-b hover:bg-orange-50">
-                                                <td className="py-3 px-4 font-semibold">👮 {o.name}</td>
+                                                <td className="py-3 px-4 font-semibold">👮 {o.displayName}</td>
                                                 <td className="py-3 px-4 text-gray-500">{o.badge}</td>
-                                                <td className="py-3 px-4 text-gray-500">{o.email || "—"}</td>
-                                                <td className="py-3 px-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">{o.cases} cases</span></td>
+                                                <td className="py-3 px-4 text-gray-500">{o.email}</td>
+                                                <td className="py-3 px-4 text-gray-500">{o.station}</td>
+                                                <td className="py-3 px-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">{o.activeCases} cases</span></td>
                                             </tr>
                                         ))}
                                     </tbody>

@@ -50,7 +50,10 @@ public class AuthController {
         if (request.getPassword() == null || request.getPassword().length() < 6) {
             return badRequest("Password must be at least 6 characters");
         }
-        List<String> allowedRoles = List.of("USER", "PASSENGER", "STATION_MASTER", "STATION_STAFF", "RPF_ADMIN", "SUPER_ADMIN");
+        if ("SUPER_ADMIN".equals(role)) {
+            return badRequest("Super Admin cannot be created from public signup");
+        }
+        List<String> allowedRoles = List.of("USER", "PASSENGER", "STATION_MASTER", "STATION_STAFF", "RPF_ADMIN");
         if (!allowedRoles.contains(role)) {
             return badRequest("Invalid role selected");
         }

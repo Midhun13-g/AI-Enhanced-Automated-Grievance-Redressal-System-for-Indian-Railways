@@ -157,16 +157,12 @@ const Signup = () => {
                                 <option value="USER">🧑 Passenger (User)</option>
                                 <option value="STATION_MASTER">🚉 Station Master</option>
                                 <option value="STATION_STAFF">👷 Station Staff</option>
-                                <option value="RPF_ADMIN">👮 RPF Admin</option>
-                                <option value="SUPER_ADMIN">🏛️ Super Admin</option>
-                            </select>
+                                <option value="RPF_ADMIN">👮 RPF Admin</option>                            </select>
                             {role !== "USER" && (
                                 <p className="text-xs text-orange-600 mt-1">
                                     {role === "STATION_MASTER" && "Controls operations of a specific station."}
                                     {role === "STATION_STAFF" && "Handles tasks assigned by the Station Master."}
-                                    {role === "RPF_ADMIN" && "Monitors security complaints and officers nationwide."}
-                                    {role === "SUPER_ADMIN" && "⚠️ Full system control — Railway Board level access."}
-                                </p>
+                                    {role === "RPF_ADMIN" && "Monitors security complaints and officers nationwide."}                                </p>
                             )}
                         </div>
                         {needsStation && (
@@ -216,3 +212,4 @@ const Signup = () => {
 };
 
 export default Signup;
+
