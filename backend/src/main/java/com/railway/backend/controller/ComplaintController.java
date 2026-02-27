@@ -20,8 +20,8 @@ public class ComplaintController {
 
     // For admin: get all complaints
     @GetMapping
-    public ResponseEntity<List<ComplaintResponse>> getAllComplaints() {
-        return ResponseEntity.ok(complaintService.getAllComplaints());
+    public ResponseEntity<List<ComplaintResponse>> getAllComplaints(Authentication authentication) {
+        return ResponseEntity.ok(complaintService.getAllComplaints(authentication));
     }
 
     // For station master: get complaints by station

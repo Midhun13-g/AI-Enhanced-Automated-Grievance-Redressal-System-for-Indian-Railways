@@ -28,6 +28,9 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,7 +51,25 @@ public class ComplaintService {
     @Value("${app.ai.classifier-url:https://midhun-2542-railwaymodel.hf.space/classify}")
     private String aiClassifierUrl;
 
-    public List<ComplaintResponse> getAllComplaints() {
+    public List<ComplaintResponse> getAllComplaints(Authentication auth) {
+        if (auth != null) {
+            String username = auth.getName();
+            User user = userRepository.findByUsername(username).orElse(null);
+            if (isPassenger(user)) {
+                String passengerIdentity = resolvePassengerDisplayName(user);
+                String legacyIdentity = resolvePassengerLegacyName(user);
+                return Stream.concat(
+                                complaintRepository.findByPassengerNameIgnoreCaseOrderByUrgencyScoreDesc(passengerIdentity).stream(),
+                                complaintRepository.findByPassengerNameIgnoreCaseOrderByUrgencyScoreDesc(legacyIdentity).stream())
+                        .collect(Collectors.toMap(Complaint::getId, c -> c, (left, right) -> left))
+                        .values().stream()
+                        .sorted((a, b) -> Integer.compare(
+                                b.getUrgencyScore() != null ? b.getUrgencyScore() : 0,
+                                a.getUrgencyScore() != null ? a.getUrgencyScore() : 0))
+                        .map(this::toResponse)
+                        .collect(Collectors.toList());
+            }
+        }
         return complaintRepository.findAllByOrderByUrgencyScoreDesc().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -88,14 +109,18 @@ public class ComplaintService {
         String category = (request.getCategory() == null || request.getCategory().isBlank())
                 ? "GENERAL"
                 : request.getCategory().trim();
+        User user = null;
         String station = null;
         if (auth != null && auth.getName() != null) {
-            station = userRepository.findByUsername(auth.getName())
-                    .map(User::getStation)
-                    .orElse(null);
+            user = userRepository.findByUsername(auth.getName()).orElse(null);
+            station = user != null ? user.getStation() : null;
+        }
+        String passengerName = request.getPassengerName();
+        if (isPassenger(user)) {
+            passengerName = resolvePassengerDisplayName(user);
         }
         Complaint complaint = Complaint.builder()
-                .passengerName(request.getPassengerName())
+                .passengerName(passengerName)
                 .complaintText(request.getComplaintText())
                 .trainNumber(request.getTrainNumber())
                 .incidentAt(request.getIncidentAt())
@@ -331,5 +356,46 @@ public class ComplaintService {
             case 9 -> "Water";
             default -> "General";
         };
+    }
+
+    private boolean isPassenger(User user) {
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        String role = user.getRole().trim().toUpperCase(Locale.ROOT);
+        return "USER".equals(role) || "PASSENGER".equals(role);
+    }
+
+    private String resolvePassengerDisplayName(User user) {
+        if (user == null) {
+            return "User";
+        }
+        String fullName = normalizeName(user.getFullName());
+        if (fullName != null) {
+            return fullName;
+        }
+        String username = user.getUsername();
+        if (username == null || username.isBlank()) {
+            return "User";
+        }
+        return username.split("@")[0].trim();
+    }
+
+    private String resolvePassengerLegacyName(User user) {
+        if (user == null || user.getUsername() == null || user.getUsername().isBlank()) {
+            return resolvePassengerDisplayName(user);
+        }
+        String localPart = user.getUsername().split("@")[0].trim();
+        return Objects.equals(localPart, resolvePassengerDisplayName(user))
+                ? resolvePassengerDisplayName(user)
+                : localPart;
+    }
+
+    private String normalizeName(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        return normalized.isBlank() ? null : normalized;
     }
 }

@@ -41,7 +41,7 @@ const Dashboard = () => {
                     <div className="flex justify-between items-center">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800 mb-2">📋 Complaints Dashboard</h2>
-                            <p className="text-gray-600">View and track all submitted complaints</p>
+                            <p className="text-gray-600">View and track your submitted complaints</p>
                         </div>
                         <Link
                             to="/complaints/new"
