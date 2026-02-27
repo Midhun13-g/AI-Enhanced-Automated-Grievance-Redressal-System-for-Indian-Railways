@@ -8,6 +8,7 @@ const ComplaintForm = () => {
     const navigate = useNavigate();
     const context = useContext(AuthContext);
     const logoutFn = context?.logout;
+    const user = context?.user;
     const [passengerName, setPassengerName] = useState("");
     const [complaintText, setComplaintText] = useState("");
     const [trainNumber, setTrainNumber] = useState("");
@@ -20,6 +21,13 @@ const ComplaintForm = () => {
         logoutFn();
         navigate("/login");
     };
+
+    React.useEffect(() => {
+        const fullName = user?.fullName?.trim();
+        const username = user?.username?.trim();
+        const fallback = username ? username.split("@")[0] : "";
+        setPassengerName(fullName || fallback);
+    }, [user]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -71,9 +79,9 @@ const ComplaintForm = () => {
                             <div className="relative">
                                 <input
                                     type="text"
-                                    placeholder="Enter your full name"
+                                    placeholder="Passenger name"
                                     value={passengerName}
-                                    onChange={(e) => setPassengerName(e.target.value)}
+                                    readOnly
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 pr-10"
                                     required
                                 />
