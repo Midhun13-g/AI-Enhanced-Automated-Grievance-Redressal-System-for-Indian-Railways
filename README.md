@@ -65,3 +65,11 @@ A production-ready, microservices-based system for railway grievance redressal, 
 
 - Built by your team, 2026
 - MIT License
+
+## For Start Frontend & Backend 
+
+- cd frontend
+- npm run dev
+
+- cd backend
+- mvn spring-boot:run
