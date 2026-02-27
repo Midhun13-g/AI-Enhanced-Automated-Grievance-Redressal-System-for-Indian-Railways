@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useContext } from "react";
+﻿import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 import { AuthContext } from "../context/AuthContext";
 
 const SECTIONS = ["My Tasks", "History", "Profile"];
-const ICONS = { "My Tasks": "🔧", History: "📜", Profile: "👤" };
+const ICONS = { "My Tasks": "ðŸ”§", History: "ðŸ“œ", Profile: "ðŸ‘¤" };
 
 const StatusBadge = ({ status }) => {
     const map = {
@@ -25,6 +25,7 @@ const StaffDashboard = () => {
     const [remarkInput, setRemarkInput] = useState({});
     const [activeRemark, setActiveRemark] = useState(null);
     const [successMsg, setSuccessMsg] = useState("");
+    const [announcements, setAnnouncements] = useState([]);
 
     const staffName = user?.username || "";
     const stationName = user?.stationName || "Your Station";
@@ -37,6 +38,20 @@ const StaffDashboard = () => {
             .then(res => { setComplaints(res.data); setLoading(false); })
             .catch(() => setLoading(false));
     }, [staffName]);
+
+    useEffect(() => {
+        if (!stationName || stationName === "Your Station") return;
+
+        const fetchAnnouncements = () => {
+            API.get(`/announcements/station/${encodeURIComponent(stationName)}`)
+                .then(res => setAnnouncements(res.data || []))
+                .catch(() => { });
+        };
+
+        fetchAnnouncements();
+        const interval = setInterval(fetchAnnouncements, 15000);
+        return () => clearInterval(interval);
+    }, [stationName]);
 
     const handleStatusUpdate = (id, newStatus) => {
         API.patch(`/complaints/${id}/status`, { newStatus })
@@ -70,11 +85,11 @@ const StaffDashboard = () => {
 
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden">
-            {/* Sidebar — indigo theme for staff */}
+            {/* Sidebar â€” indigo theme for staff */}
             <aside className="w-64 bg-gradient-to-b from-indigo-700 to-indigo-900 text-white flex flex-col shadow-xl flex-shrink-0">
                 <div className="p-5 border-b border-indigo-600">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-lg">👷</div>
+                        <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-lg">ðŸ‘·</div>
                         <div>
                             <div className="font-bold text-white text-sm">RailMadad</div>
                             <div className="text-indigo-200 text-xs">Station Staff Portal</div>
@@ -98,7 +113,7 @@ const StaffDashboard = () => {
                 </nav>
                 <div className="p-4 border-t border-indigo-600">
                     <div className="text-indigo-200 text-xs mb-3 text-center">Role: Station Staff</div>
-                    <button onClick={handleLogout} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-semibold transition">🚪 Logout</button>
+                    <button onClick={handleLogout} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-semibold transition">ðŸšª Logout</button>
                 </div>
             </aside>
 
@@ -107,7 +122,7 @@ const StaffDashboard = () => {
                 <div className="bg-white shadow-sm px-8 py-4 flex items-center justify-between sticky top-0 z-10 border-b border-indigo-100">
                     <h1 className="text-xl font-bold text-gray-800">{ICONS[activeSection]} {activeSection}</h1>
                     <div className="flex items-center gap-3">
-                        <span className="text-sm text-indigo-600 font-medium">🚉 {stationName}</span>
+                        <span className="text-sm text-indigo-600 font-medium">ðŸš‰ {stationName}</span>
                         <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                             {staffName[0]?.toUpperCase() || "S"}
                         </div>
@@ -136,11 +151,35 @@ const StaffDashboard = () => {
                                 ))}
                             </div>
 
+                            <div className="bg-white rounded-xl shadow mb-6">
+                                <div className="p-4 border-b">
+                                    <h3 className="font-bold text-gray-800">Station Announcements ({announcements.length})</h3>
+                                </div>
+                                {announcements.length === 0 ? (
+                                    <div className="p-4 text-sm text-gray-400">No announcements for {stationName}.</div>
+                                ) : (
+                                    <div className="divide-y">
+                                        {announcements.slice(0, 5).map(a => (
+                                            <div key={a.id} className="p-4 flex items-start justify-between gap-4">
+                                                <div>
+                                                    <span className="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2 py-1 rounded mr-2">{a.team}</span>
+                                                    <span className="text-sm text-gray-700">{a.message}</span>
+                                                    {a.createdBy && <span className="text-xs text-gray-400 ml-2">by {a.createdBy}</span>}
+                                                </div>
+                                                <span className="text-xs text-gray-400 whitespace-nowrap">
+                                                    {new Date(a.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             {loading ? (
                                 <div className="bg-white rounded-xl shadow p-12 text-center text-gray-400">Loading tasks...</div>
                             ) : activeTasks.length === 0 ? (
                                 <div className="bg-white rounded-xl shadow p-12 text-center">
-                                    <div className="text-5xl mb-4">✅</div>
+                                    <div className="text-5xl mb-4">âœ…</div>
                                     <p className="text-gray-500 text-lg">All tasks completed! Great work.</p>
                                 </div>
                             ) : (
@@ -158,11 +197,11 @@ const StaffDashboard = () => {
                                                     </div>
                                                     <p className="text-gray-800 font-medium">{c.complaintText}</p>
                                                     <p className="text-gray-400 text-sm mt-1">
-                                                        👤 {c.passengerName} · 📅 {c.createdAt?.split("T")[0]} · 🚉 {c.station || stationName}
+                                                        ðŸ‘¤ {c.passengerName} Â· ðŸ“… {c.createdAt?.split("T")[0]} Â· ðŸš‰ {c.station || stationName}
                                                     </p>
                                                     {c.remarks && (
                                                         <p className="text-gray-500 text-sm italic mt-2 bg-gray-50 px-3 py-1 rounded">
-                                                            📝 Remark: {c.remarks}
+                                                            ðŸ“ Remark: {c.remarks}
                                                         </p>
                                                     )}
                                                     {activeRemark === c.id && (
@@ -185,16 +224,16 @@ const StaffDashboard = () => {
                                                     {c.status !== "IN_PROGRESS" && (
                                                         <button onClick={() => handleStatusUpdate(c.id, "IN_PROGRESS")}
                                                             className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-yellow-600 font-semibold whitespace-nowrap">
-                                                            ▶ Start Task
+                                                            â–¶ Start Task
                                                         </button>
                                                     )}
                                                     <button onClick={() => handleStatusUpdate(c.id, "RESOLVED")}
                                                         className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-600 font-semibold">
-                                                        ✅ Complete
+                                                        âœ… Complete
                                                     </button>
                                                     <button onClick={() => setActiveRemark(activeRemark === c.id ? null : c.id)}
                                                         className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">
-                                                        📝 Remark
+                                                        ðŸ“ Remark
                                                     </button>
                                                 </div>
                                             </div>
@@ -233,10 +272,10 @@ const StaffDashboard = () => {
                                                     <td className="py-3 px-4 text-indigo-600 font-semibold">#{c.id}</td>
                                                     <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
                                                     <td className="py-3 px-4">{c.passengerName}</td>
-                                                    <td className="py-3 px-4 text-gray-400">{c.department || "—"}</td>                                                    <td className="py-3 px-4 text-gray-500 text-xs">
-                                                        {c.resolvedBy ? `${c.resolvedBy}${c.resolvedByRole ? ` (${c.resolvedByRole})` : ""}` : "�"}
+                                                    <td className="py-3 px-4 text-gray-400">{c.department || "â€”"}</td>                                                    <td className="py-3 px-4 text-gray-500 text-xs">
+                                                        {c.resolvedBy ? `${c.resolvedBy}${c.resolvedByRole ? ` (${c.resolvedByRole})` : ""}` : "—"}
                                                     </td>
-                                                    <td className="py-3 px-4 text-gray-500 italic text-xs">{c.remarks || "—"}</td>
+                                                    <td className="py-3 px-4 text-gray-500 italic text-xs">{c.remarks || "â€”"}</td>
                                                     <td className="py-3 px-4 text-gray-400">{c.updatedAt?.split("T")[0]}</td>
                                                 </tr>
                                             ))}
@@ -252,7 +291,7 @@ const StaffDashboard = () => {
                         <div className="max-w-md mx-auto">
                             <div className="bg-white rounded-xl shadow p-8 text-center">
                                 <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-4xl">👷</span>
+                                    <span className="text-4xl">ðŸ‘·</span>
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-800">{staffName}</h2>
                                 <span className="inline-block bg-indigo-100 text-indigo-700 text-sm font-semibold px-3 py-1 rounded-full mt-2">STATION STAFF</span>
@@ -290,4 +329,5 @@ const StaffDashboard = () => {
 };
 
 export default StaffDashboard;
+
 

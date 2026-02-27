@@ -44,10 +44,16 @@ const StationMasterDashboard = () => {
         const staffUrl = stationName && stationName !== "Your Station"
             ? `/users?role=STATION_STAFF&station=${encodeURIComponent(stationName)}`
             : "/users?role=STATION_STAFF";
-        Promise.all([API.get(complaintsUrl), API.get(staffUrl)])
-            .then(([complaintsRes, staffRes]) => {
+        const announcementUrl = stationName && stationName !== "Your Station"
+            ? `/announcements/station/${encodeURIComponent(stationName)}`
+            : null;
+        const announcementReq = announcementUrl ? API.get(announcementUrl) : Promise.resolve({ data: [] });
+
+        Promise.all([API.get(complaintsUrl), API.get(staffUrl), announcementReq])
+            .then(([complaintsRes, staffRes, announcementRes]) => {
                 setComplaints(complaintsRes.data);
                 setStaff(staffRes.data);
+                setAnnouncementLog(announcementRes.data || []);
                 setLoading(false);
             })
             .catch(() => setLoading(false));
@@ -93,10 +99,19 @@ const StationMasterDashboard = () => {
 
     const handleSendAnnouncement = (e) => {
         e.preventDefault();
-        if (!announcement.message.trim()) return;
-        const entry = { ...announcement, time: new Date().toLocaleTimeString(), id: Date.now() };
-        setAnnouncementLog(prev => [entry, ...prev]);
-        setAnnouncement(a => ({ ...a, message: "" }));
+        const message = announcement.message.trim();
+        if (!message || !stationName || stationName === "Your Station") return;
+
+        API.post("/announcements", {
+            station: stationName,
+            team: announcement.team,
+            message,
+        })
+            .then((res) => {
+                setAnnouncementLog(prev => [res.data, ...prev]);
+                setAnnouncement(a => ({ ...a, message: "" }));
+            })
+            .catch(() => { });
     };
 
     const filteredComplaints = complaints.filter(c =>
@@ -502,8 +517,11 @@ const StationMasterDashboard = () => {
                                         <div>
                                             <span className="bg-teal-100 text-teal-700 text-xs font-bold px-2 py-1 rounded mr-3">{a.team}</span>
                                             <span className="text-gray-700 text-sm">{a.message}</span>
+                                            {a.createdBy && <span className="text-gray-400 text-xs ml-3">by {a.createdBy}</span>}
                                         </div>
-                                        <span className="text-gray-400 text-xs ml-4 whitespace-nowrap">{a.time}</span>
+                                        <span className="text-gray-400 text-xs ml-4 whitespace-nowrap">
+                                            {new Date(a.createdAt || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
