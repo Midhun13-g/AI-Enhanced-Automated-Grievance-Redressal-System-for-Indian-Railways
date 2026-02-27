@@ -25,9 +25,11 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,6 +52,37 @@ public class ComplaintService {
 
     public List<ComplaintResponse> getAllComplaints() {
         return complaintRepository.findAllByOrderByUrgencyScoreDesc().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<ComplaintResponse> getMyComplaints(Authentication auth) {
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            return List.of();
+        }
+
+        String username = auth.getName();
+        List<Complaint> mine = complaintRepository.findByCreatedByUsernameOrderByUrgencyScoreDesc(username);
+        if (!mine.isEmpty()) {
+            return mine.stream().map(this::toResponse).collect(Collectors.toList());
+        }
+
+        // Backward compatibility for legacy complaints created before ownership tracking.
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        List<Complaint> legacy = new ArrayList<>(complaintRepository.findByPassengerNameIgnoreCaseOrderByUrgencyScoreDesc(username));
+        if (userOpt.isPresent()) {
+            String fullName = userOpt.get().getFullName();
+            if (fullName != null && !fullName.isBlank() && !fullName.equalsIgnoreCase(username)) {
+                legacy.addAll(complaintRepository.findByPassengerNameIgnoreCaseOrderByUrgencyScoreDesc(fullName));
+            }
+        }
+
+        return legacy.stream()
+                .collect(Collectors.toMap(Complaint::getId, c -> c, (a, b) -> a))
+                .values().stream()
+                .sorted((a, b) -> Integer.compare(
+                        b.getUrgencyScore() == null ? 0 : b.getUrgencyScore(),
+                        a.getUrgencyScore() == null ? 0 : a.getUrgencyScore()))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -89,13 +122,26 @@ public class ComplaintService {
                 ? "GENERAL"
                 : request.getCategory().trim();
         String station = null;
+        String createdByUsername = null;
+        String passengerName = request.getPassengerName();
+
         if (auth != null && auth.getName() != null) {
-            station = userRepository.findByUsername(auth.getName())
-                    .map(User::getStation)
-                    .orElse(null);
+            createdByUsername = auth.getName();
+            Optional<User> submittingUser = userRepository.findByUsername(createdByUsername);
+            station = submittingUser.map(User::getStation).orElse(null);
+            if (submittingUser.isPresent() && "USER".equalsIgnoreCase(submittingUser.get().getRole())) {
+                String fullName = submittingUser.get().getFullName();
+                if (fullName != null && !fullName.isBlank()) {
+                    passengerName = fullName;
+                } else {
+                    passengerName = createdByUsername;
+                }
+            }
         }
+
         Complaint complaint = Complaint.builder()
-                .passengerName(request.getPassengerName())
+                .passengerName(passengerName)
+                .createdByUsername(createdByUsername)
                 .complaintText(request.getComplaintText())
                 .trainNumber(request.getTrainNumber())
                 .incidentAt(request.getIncidentAt())

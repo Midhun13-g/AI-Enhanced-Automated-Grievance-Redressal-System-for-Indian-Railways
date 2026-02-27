@@ -20,7 +20,7 @@ const Dashboard = () => {
     const fetchComplaints = async () => {
         try {
             setLoading(true);
-            const res = await API.get("/complaints");
+            const res = await API.get("/complaints/my");
             setComplaints(res.data);
         } catch (err) {
             console.error("Failed to fetch complaints", err);
@@ -41,7 +41,7 @@ const Dashboard = () => {
                     <div className="flex justify-between items-center">
                         <div>
                             <h2 className="text-2xl font-bold text-gray-800 mb-2">📋 Complaints Dashboard</h2>
-                            <p className="text-gray-600">View and track all submitted complaints</p>
+                            <p className="text-gray-600">View and track your submitted complaints</p>
                         </div>
                         <Link
                             to="/complaints/new"

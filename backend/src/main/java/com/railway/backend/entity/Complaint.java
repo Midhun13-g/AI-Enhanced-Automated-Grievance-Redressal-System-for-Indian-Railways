@@ -21,6 +21,9 @@ public class Complaint {
     @Column(name = "passenger_name", nullable = false)
     private String passengerName;
 
+    @Column(name = "created_by_username")
+    private String createdByUsername;
+
     @Column(name = "complaint_text", nullable = false, columnDefinition = "TEXT")
     private String complaintText;
 

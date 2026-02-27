@@ -24,6 +24,11 @@ public class ComplaintController {
         return ResponseEntity.ok(complaintService.getAllComplaints());
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<List<ComplaintResponse>> getMyComplaints(Authentication authentication) {
+        return ResponseEntity.ok(complaintService.getMyComplaints(authentication));
+    }
+
     // For station master: get complaints by station
     @GetMapping("/station/{station}")
     public ResponseEntity<List<ComplaintResponse>> getComplaintsByStation(@PathVariable String station) {
