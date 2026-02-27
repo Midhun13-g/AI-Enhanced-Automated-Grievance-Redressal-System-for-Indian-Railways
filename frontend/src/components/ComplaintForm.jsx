@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 import { AuthContext } from "../context/AuthContext";
@@ -6,9 +6,8 @@ import Navbar from "./Navbar";
 
 const ComplaintForm = () => {
     const navigate = useNavigate();
-    const context = useContext(AuthContext);
-    const logoutFn = context?.logout;
-    const user = context?.user;
+    const { user, logout: logoutFn } = useContext(AuthContext);
+
     const [passengerName, setPassengerName] = useState("");
     const [complaintText, setComplaintText] = useState("");
     const [trainNumber, setTrainNumber] = useState("");
@@ -16,6 +15,22 @@ const ComplaintForm = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
+    const fallbackNameFromUsername = (value) => {
+        const localPart = (value || "").split("@")[0];
+        return localPart
+            .split(/[._-]+/)
+            .filter(Boolean)
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" ") || "User";
+    };
+    const isPassengerUser = user?.role === "USER";
+    const autoPassengerName = (user?.fullName || fallbackNameFromUsername(user?.username || "")).trim();
+
+    useEffect(() => {
+        if (isPassengerUser && autoPassengerName) {
+            setPassengerName(autoPassengerName);
+        }
+    }, [isPassengerUser, autoPassengerName]);
 
     const handleLogout = () => {
         logoutFn();
@@ -43,7 +58,7 @@ const ComplaintForm = () => {
                 category: "GENERAL",
             });
             setSuccess("Complaint submitted successfully!");
-            setPassengerName("");
+            setPassengerName(isPassengerUser ? autoPassengerName : "");
             setComplaintText("");
             setTrainNumber("");
             setIncidentAt("");
@@ -79,10 +94,14 @@ const ComplaintForm = () => {
                             <div className="relative">
                                 <input
                                     type="text"
-                                    placeholder="Passenger name"
+                                    placeholder={isPassengerUser ? "" : "Enter your full name"}
                                     value={passengerName}
-                                    readOnly
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 pr-10"
+                                    onChange={(e) => setPassengerName(e.target.value)}
+                                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg pr-10 ${isPassengerUser
+                                        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                                        : "focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        }`}
+                                    disabled={isPassengerUser}
                                     required
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-400">
