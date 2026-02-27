@@ -104,6 +104,16 @@ const SuperAdminDashboard = () => {
         }
     };
 
+    const handleDeleteComplaint = async (id) => {
+        if (!window.confirm("Delete this complaint permanently?")) return;
+        try {
+            await API.delete(`/complaints/${id}`);
+            setComplaints(prev => prev.filter(c => c.id !== id));
+        } catch (err) {
+            window.alert(err.response?.data?.message || "Failed to delete complaint.");
+        }
+    };
+
     const filteredUsers = users.filter((u) => {
         const matchSearch = searchTerm
             ? (u.username || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -366,15 +376,17 @@ const SuperAdminDashboard = () => {
                                             <th className="py-3 px-4 text-left">Department</th>
                                             <th className="py-3 px-4 text-left">Station</th>
                                             <th className="py-3 px-4 text-left">Assigned To</th>
+                                            <th className="py-3 px-4 text-left">Resolved By</th>
                                             <th className="py-3 px-4 text-left">Status</th>
                                             <th className="py-3 px-4 text-left">Date</th>
+                                            <th className="py-3 px-4 text-left">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {loading ? (
-                                            <tr><td colSpan="8" className="py-8 text-center text-gray-400">Loading...</td></tr>
+                                            <tr><td colSpan="10" className="py-8 text-center text-gray-400">Loading...</td></tr>
                                         ) : filteredComplaints.length === 0 ? (
-                                            <tr><td colSpan="8" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
+                                            <tr><td colSpan="10" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
                                         ) : filteredComplaints.map(c => (
                                             <tr key={c.id} className="border-b hover:bg-purple-50">
                                                 <td className="py-3 px-4 text-purple-600 font-semibold">#{c.id}</td>
@@ -383,10 +395,23 @@ const SuperAdminDashboard = () => {
                                                 <td className="py-3 px-4 text-gray-600">{c.department || c.category || "-"}</td>
                                                 <td className="py-3 px-4 text-gray-400">{c.station || "-"}</td>
                                                 <td className="py-3 px-4 text-gray-400">{c.assignedTo || "-"}</td>
+                                                <td className="py-3 px-4 text-gray-500 text-xs">
+                                                    {c.status === "RESOLVED"
+                                                        ? (c.resolvedBy ? `${c.resolvedBy}${c.resolvedByRole ? ` (${c.resolvedByRole})` : ""}` : "Unknown")
+                                                        : "-"}
+                                                </td>
                                                 <td className="py-3 px-4">
                                                     <span className={`px-2 py-1 rounded text-xs font-semibold ${c.status === "RESOLVED" ? "bg-green-100 text-green-700" : c.status === "IN_PROGRESS" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>{c.status}</span>
                                                 </td>
                                                 <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
+                                                <td className="py-3 px-4">
+                                                    <button
+                                                        onClick={() => handleDeleteComplaint(c.id)}
+                                                        className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded hover:bg-red-200"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

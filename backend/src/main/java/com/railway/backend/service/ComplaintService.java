@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -225,6 +226,26 @@ public class ComplaintService {
                 .orElseThrow(() -> new RuntimeException("Complaint not found"));
         complaint.setRemarks(remarks);
         return toResponse(complaintRepository.save(complaint));
+    }
+
+    @Transactional
+    public void deleteComplaint(Long id, Authentication auth) {
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            throw new AccessDeniedException("Only super admin can delete complaints");
+        }
+
+        User actor = userRepository.findByUsername(auth.getName())
+                .orElseThrow(() -> new AccessDeniedException("Only super admin can delete complaints"));
+
+        String role = actor.getRole() == null ? "" : actor.getRole().trim().toUpperCase(Locale.ROOT);
+        if (!"SUPER_ADMIN".equals(role)) {
+            throw new AccessDeniedException("Only super admin can delete complaints");
+        }
+
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        complaintHistoryRepository.deleteByComplaintId(id);
+        complaintRepository.delete(complaint);
     }
 
     private ComplaintResponse toResponse(Complaint complaint) {

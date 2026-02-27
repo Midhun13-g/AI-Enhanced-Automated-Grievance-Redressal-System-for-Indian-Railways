@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface ComplaintHistoryRepository extends JpaRepository<ComplaintHistory, Long> {
     List<ComplaintHistory> findByComplaintId(Long complaintId);
+    void deleteByComplaintId(Long complaintId);
 }
