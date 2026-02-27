@@ -6,9 +6,8 @@ import Navbar from "./Navbar";
 
 const ComplaintForm = () => {
     const navigate = useNavigate();
-    const context = useContext(AuthContext);
-    const user = context?.user;
-    const logoutFn = context?.logout;
+    const { user, logout: logoutFn } = useContext(AuthContext);
+
     const [passengerName, setPassengerName] = useState("");
     const [complaintText, setComplaintText] = useState("");
     const [trainNumber, setTrainNumber] = useState("");
@@ -37,6 +36,13 @@ const ComplaintForm = () => {
         logoutFn();
         navigate("/login");
     };
+
+    React.useEffect(() => {
+        const fullName = user?.fullName?.trim();
+        const username = user?.username?.trim();
+        const fallback = username ? username.split("@")[0] : "";
+        setPassengerName(fullName || fallback);
+    }, [user]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

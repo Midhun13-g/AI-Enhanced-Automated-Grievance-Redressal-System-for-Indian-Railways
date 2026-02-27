@@ -8,7 +8,10 @@ import java.util.List;
 
 public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
     List<Complaint> findAllByOrderByUrgencyScoreDesc();
+<<<<<<< HEAD
     List<Complaint> findByCreatedByUsernameOrderByUrgencyScoreDesc(String createdByUsername);
+=======
+>>>>>>> 31ac9446b918257fbd2b929db730a8b441f71e52
     List<Complaint> findByPassengerNameIgnoreCaseOrderByUrgencyScoreDesc(String passengerName);
 
     List<Complaint> findByStatusOrderByUrgencyScoreDesc(String status);
