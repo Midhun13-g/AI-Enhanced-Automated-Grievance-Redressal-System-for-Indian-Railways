@@ -118,13 +118,27 @@ const StationMasterDashboard = () => {
         filterStatus ? (escalatedIds.includes(c.id) ? "ESCALATED" : c.status) === filterStatus : true
     );
 
-    const sosComplaints = complaints.filter(c =>
-        c.status !== "RESOLVED" && (
-            (c.complaintText || "").toLowerCase().includes("sos") ||
-            (c.complaintText || "").toLowerCase().includes("emergency") ||
-            (c.complaintText || "").toLowerCase().includes("help") ||
-            (c.urgencyScore || 0) >= 8
-        )
+    const isHighEmergency = (complaint) => {
+        const text = (complaint.complaintText || "").toLowerCase();
+        const highRiskKeyword =
+            text.includes("sos") ||
+            text.includes("emergency") ||
+            text.includes("attack") ||
+            text.includes("assault") ||
+            text.includes("harass") ||
+            text.includes("theft") ||
+            text.includes("snatch") ||
+            text.includes("fight") ||
+            text.includes("weapon") ||
+            text.includes("fire") ||
+            text.includes("bomb") ||
+            text.includes("medical emergency");
+        const highUrgency = (complaint.urgencyScore || 0) >= 80;
+        return highUrgency && highRiskKeyword;
+    };
+
+    const sosComplaints = complaints.filter(
+        (c) => c.status !== "RESOLVED" && isHighEmergency(c)
     );
 
     const today = new Date().toISOString().split("T")[0];
@@ -441,7 +455,6 @@ const StationMasterDashboard = () => {
                             <div className="bg-white rounded-xl shadow p-6">
                                 <h3 className="font-bold text-gray-800 mb-2">Station Staff Roster</h3>
                                 <p className="text-sm text-gray-500">
-                                    Staff accounts are managed centrally by Super Admin. This view is synced from backend users.
                                 </p>
                             </div>
                             <div className="bg-white rounded-xl shadow overflow-hidden">
