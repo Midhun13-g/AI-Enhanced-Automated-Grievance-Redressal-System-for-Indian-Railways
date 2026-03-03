@@ -35,7 +35,8 @@ const Login = () => {
                 res.data.role,
                 res.data.stationName || "",
                 res.data.email || normalizedEmail,
-                res.data.fullName || fallbackNameFromEmail(normalizedEmail)
+                res.data.fullName || fallbackNameFromEmail(normalizedEmail),
+                res.data.trainNumber || ""
             );
             navigate("/");
         } catch (err) {

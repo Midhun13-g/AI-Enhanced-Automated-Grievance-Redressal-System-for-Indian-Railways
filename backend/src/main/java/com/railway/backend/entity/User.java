@@ -33,6 +33,9 @@ public class User {
     @Column(name = "station")
     private String station;
 
+    @Column(name = "train_number")
+    private String trainNumber;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

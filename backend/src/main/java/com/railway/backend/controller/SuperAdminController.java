@@ -33,6 +33,7 @@ public class SuperAdminController {
             m.put("role", u.getRole());
             m.put("staffId", u.getStaffId());
             m.put("station", u.getStation());
+            m.put("trainNumber", u.getTrainNumber());
             m.put("createdAt", u.getCreatedAt());
             return m;
         }).collect(Collectors.toList());
@@ -46,6 +47,7 @@ public class SuperAdminController {
         String password = body.get("password");
         String role = body.get("role");
         String stationName = body.get("stationName");
+        String trainNumber = body.get("trainNumber");
 
         if (email == null || email.isBlank() || password == null || password.length() < 6 || role == null) {
             Map<String, String> err = new HashMap<>();
@@ -65,6 +67,7 @@ public class SuperAdminController {
                 .role(normalizedRole)
                 .staffId("STATION_STAFF".equals(normalizedRole) ? generateUniqueStaffId() : null)
                 .station(stationName)
+                .trainNumber(trainNumber)
                 .build();
         User saved = userRepository.save(user);
 
@@ -76,6 +79,7 @@ public class SuperAdminController {
         res.put("role", saved.getRole());
         res.put("staffId", saved.getStaffId());
         res.put("station", saved.getStation());
+        res.put("trainNumber", saved.getTrainNumber());
         return ResponseEntity.status(HttpStatus.CREATED).body(res);
     }
 
@@ -92,6 +96,13 @@ public class SuperAdminController {
             }
             if (body.containsKey("stationName"))
                 user.setStation(body.get("stationName"));
+            if (body.containsKey("trainNumber")) {
+                String trainNumber = body.get("trainNumber");
+                if (trainNumber != null && trainNumber.isBlank()) {
+                    trainNumber = null;
+                }
+                user.setTrainNumber(trainNumber);
+            }
             userRepository.save(user);
             Map<String, Object> res = new HashMap<>();
             res.put("message", "User updated");
@@ -101,6 +112,7 @@ public class SuperAdminController {
             res.put("role", user.getRole());
             res.put("staffId", user.getStaffId());
             res.put("station", user.getStation());
+            res.put("trainNumber", user.getTrainNumber());
             return ResponseEntity.ok(res);
         }).orElse(ResponseEntity.notFound().build());
     }

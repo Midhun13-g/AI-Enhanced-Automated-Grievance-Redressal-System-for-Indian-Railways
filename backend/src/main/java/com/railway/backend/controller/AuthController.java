@@ -104,6 +104,7 @@ public class AuthController {
         response.setEmail(user.getUsername());
         response.setFullName(resolveDisplayName(user));
         response.setStationName(user.getStation());
+        response.setTrainNumber(user.getTrainNumber());
         return ResponseEntity.ok(response);
     }
 

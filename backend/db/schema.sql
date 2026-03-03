@@ -11,6 +11,7 @@ CREATE TABLE users (
             'RPF_ADMIN'
         )
     ),
+    train_number VARCHAR(16),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

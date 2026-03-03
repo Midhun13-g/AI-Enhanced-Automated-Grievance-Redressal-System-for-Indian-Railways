@@ -4,7 +4,7 @@ import API from "../api";
 import { AuthContext } from "../context/AuthContext";
 
 const SECTIONS = ["My Tasks", "History", "Profile"];
-const ICONS = { "My Tasks": "ðŸ”§", History: "ðŸ“œ", Profile: "ðŸ‘¤" };
+const ICONS = { "My Tasks": "MT", History: "HS", Profile: "PR" };
 
 const StatusBadge = ({ status }) => {
     const map = {
@@ -85,11 +85,11 @@ const StaffDashboard = () => {
 
     return (
         <div className="flex h-screen bg-gray-100 overflow-hidden">
-            {/* Sidebar â€” indigo theme for staff */}
+            {/* Sidebar - indigo theme for staff */}
             <aside className="w-64 bg-gradient-to-b from-indigo-700 to-indigo-900 text-white flex flex-col shadow-xl flex-shrink-0">
                 <div className="p-5 border-b border-indigo-600">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-lg">ðŸ‘·</div>
+                        <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-sm font-bold">SS</div>
                         <div>
                             <div className="font-bold text-white text-sm">RailMadad</div>
                             <div className="text-indigo-200 text-xs">Station Staff Portal</div>
@@ -113,7 +113,7 @@ const StaffDashboard = () => {
                 </nav>
                 <div className="p-4 border-t border-indigo-600">
                     <div className="text-indigo-200 text-xs mb-3 text-center">Role: Station Staff</div>
-                    <button onClick={handleLogout} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-semibold transition">ðŸšª Logout</button>
+                    <button onClick={handleLogout} className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-semibold transition">Logout</button>
                 </div>
             </aside>
 
@@ -122,7 +122,7 @@ const StaffDashboard = () => {
                 <div className="bg-white shadow-sm px-8 py-4 flex items-center justify-between sticky top-0 z-10 border-b border-indigo-100">
                     <h1 className="text-xl font-bold text-gray-800">{ICONS[activeSection]} {activeSection}</h1>
                     <div className="flex items-center gap-3">
-                        <span className="text-sm text-indigo-600 font-medium">ðŸš‰ {stationName}</span>
+                        <span className="text-sm text-indigo-600 font-medium">{stationName}</span>
                         <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
                             {staffName[0]?.toUpperCase() || "S"}
                         </div>
@@ -179,7 +179,6 @@ const StaffDashboard = () => {
                                 <div className="bg-white rounded-xl shadow p-12 text-center text-gray-400">Loading tasks...</div>
                             ) : activeTasks.length === 0 ? (
                                 <div className="bg-white rounded-xl shadow p-12 text-center">
-                                    <div className="text-5xl mb-4">âœ…</div>
                                     <p className="text-gray-500 text-lg">All tasks completed! Great work.</p>
                                 </div>
                             ) : (
@@ -197,11 +196,11 @@ const StaffDashboard = () => {
                                                     </div>
                                                     <p className="text-gray-800 font-medium">{c.complaintText}</p>
                                                     <p className="text-gray-400 text-sm mt-1">
-                                                        ðŸ‘¤ {c.passengerName} Â· ðŸ“… {c.createdAt?.split("T")[0]} Â· ðŸš‰ {c.station || stationName}
+                                                        By {c.passengerName} | {c.createdAt?.split("T")[0]} | {c.station || stationName}
                                                     </p>
                                                     {c.remarks && (
                                                         <p className="text-gray-500 text-sm italic mt-2 bg-gray-50 px-3 py-1 rounded">
-                                                            ðŸ“ Remark: {c.remarks}
+                                                            Remark: {c.remarks}
                                                         </p>
                                                     )}
                                                     {activeRemark === c.id && (
@@ -221,19 +220,19 @@ const StaffDashboard = () => {
                                                     )}
                                                 </div>
                                                 <div className="flex flex-col gap-2 ml-6">
-                                                    {c.status !== "IN_PROGRESS" && (
+                                                    {c.status === "PENDING" && (
                                                         <button onClick={() => handleStatusUpdate(c.id, "IN_PROGRESS")}
                                                             className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-yellow-600 font-semibold whitespace-nowrap">
-                                                            â–¶ Start Task
+                                                            Start Task
                                                         </button>
                                                     )}
                                                     <button onClick={() => handleStatusUpdate(c.id, "RESOLVED")}
                                                         className="bg-green-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-600 font-semibold">
-                                                        âœ… Complete
+                                                        Complete
                                                     </button>
                                                     <button onClick={() => setActiveRemark(activeRemark === c.id ? null : c.id)}
                                                         className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-200">
-                                                        ðŸ“ Remark
+                                                        Remark
                                                     </button>
                                                 </div>
                                             </div>
@@ -272,10 +271,10 @@ const StaffDashboard = () => {
                                                     <td className="py-3 px-4 text-indigo-600 font-semibold">#{c.id}</td>
                                                     <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
                                                     <td className="py-3 px-4">{c.passengerName}</td>
-                                                    <td className="py-3 px-4 text-gray-400">{c.department || "â€”"}</td>                                                    <td className="py-3 px-4 text-gray-500 text-xs">
-                                                        {c.resolvedBy ? `${c.resolvedBy}${c.resolvedByRole ? ` (${c.resolvedByRole})` : ""}` : "—"}
+                                                    <td className="py-3 px-4 text-gray-400">{c.department || "-"}</td>                                                    <td className="py-3 px-4 text-gray-500 text-xs">
+                                                        {c.resolvedBy ? `${c.resolvedBy}${c.resolvedByRole ? ` (${c.resolvedByRole})` : ""}` : "-"}
                                                     </td>
-                                                    <td className="py-3 px-4 text-gray-500 italic text-xs">{c.remarks || "â€”"}</td>
+                                                    <td className="py-3 px-4 text-gray-500 italic text-xs">{c.remarks || "-"}</td>
                                                     <td className="py-3 px-4 text-gray-400">{c.updatedAt?.split("T")[0]}</td>
                                                 </tr>
                                             ))}
@@ -291,7 +290,7 @@ const StaffDashboard = () => {
                         <div className="max-w-md mx-auto">
                             <div className="bg-white rounded-xl shadow p-8 text-center">
                                 <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <span className="text-4xl">ðŸ‘·</span>
+                                    <span className="text-lg font-bold">SS</span>
                                 </div>
                                 <h2 className="text-xl font-bold text-gray-800">{staffName}</h2>
                                 <span className="inline-block bg-indigo-100 text-indigo-700 text-sm font-semibold px-3 py-1 rounded-full mt-2">STATION STAFF</span>

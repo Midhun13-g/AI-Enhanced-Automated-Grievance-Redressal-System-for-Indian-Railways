@@ -81,6 +81,7 @@ const SuperAdminDashboard = () => {
             const payload = {
                 role: (editData.role || "").toUpperCase(),
                 stationName: editData.stationName ?? "",
+                trainNumber: editData.trainNumber ?? "",
             };
             const res = await API.patch(`/superadmin/users/${id}`, payload);
             setUsers(prev => prev.map(u => (u.id === id ? { ...u, ...res.data } : u)));
@@ -243,15 +244,16 @@ const SuperAdminDashboard = () => {
                                             <th className="py-3 px-4 text-left">Email</th>
                                             <th className="py-3 px-4 text-left">Role</th>
                                             <th className="py-3 px-4 text-left">Station</th>
+                                            <th className="py-3 px-4 text-left">Train No</th>
                                             <th className="py-3 px-4 text-left">Created</th>
                                             <th className="py-3 px-4 text-left">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {loading ? (
-                                            <tr><td colSpan="7" className="py-8 text-center text-gray-400">Loading...</td></tr>
+                                            <tr><td colSpan="8" className="py-8 text-center text-gray-400">Loading...</td></tr>
                                         ) : filteredUsers.length === 0 ? (
-                                            <tr><td colSpan="7" className="py-8 text-center text-gray-400">No users found.</td></tr>
+                                            <tr><td colSpan="8" className="py-8 text-center text-gray-400">No users found.</td></tr>
                                         ) : filteredUsers.map((u) => (
                                             <tr key={u.id} className="border-b hover:bg-purple-50">
                                                 <td className="py-3 px-4 text-purple-600 font-semibold">#{u.id}</td>
@@ -273,6 +275,13 @@ const SuperAdminDashboard = () => {
                                                             className="border rounded px-2 py-1 text-sm w-full" placeholder="Station name" />
                                                     ) : (u.station || "-")}
                                                 </td>
+                                                <td className="py-3 px-4">
+                                                    {editingId === u.id ? (
+                                                        <input value={editData.trainNumber ?? (u.trainNumber || "")}
+                                                            onChange={e => setEditData(prev => ({ ...prev, trainNumber: e.target.value }))}
+                                                            className="border rounded px-2 py-1 text-sm w-full" placeholder="Train no" />
+                                                    ) : (u.trainNumber || "-")}
+                                                </td>
                                                 <td className="py-3 px-4 text-gray-400">{u.createdAt?.split("T")[0] || "-"}</td>
                                                 <td className="py-3 px-4">
                                                     <div className="flex gap-2">
@@ -283,7 +292,7 @@ const SuperAdminDashboard = () => {
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <button onClick={() => { setEditingId(u.id); setEditData({ role: u.role, stationName: u.station || "" }); }} className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded hover:bg-blue-200">Edit</button>
+                                                                <button onClick={() => { setEditingId(u.id); setEditData({ role: u.role, stationName: u.station || "", trainNumber: u.trainNumber || "" }); }} className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded hover:bg-blue-200">Edit</button>
                                                                 <button onClick={() => handleDeleteUser(u.id)} className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded hover:bg-red-200">Delete</button>
                                                             </>
                                                         )}
@@ -323,39 +332,30 @@ const SuperAdminDashboard = () => {
 
                     {activeSection === "Complaints" && (
                         <div className="bg-white rounded-xl shadow">
-                            <div className="p-5 border-b flex justify-between items-center">
+                            <div className="p-5 border-b flex flex-wrap items-center gap-4">
                                 <h3 className="font-bold text-gray-800">All System Complaints</h3>
-                                <div className="flex gap-3 text-sm">
-                                    <button onClick={() => setComplaintStatusFilter("PENDING")} className="bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">Pending: {complaints.filter(c => c.status === "PENDING").length}</button>
-                                    <button onClick={() => setComplaintStatusFilter("IN_PROGRESS")} className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-semibold">In Progress: {complaints.filter(c => c.status === "IN_PROGRESS").length}</button>
-                                    <button onClick={() => setComplaintStatusFilter("RESOLVED")} className="bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">Resolved: {complaints.filter(c => c.status === "RESOLVED").length}</button>
+                                <div className="flex flex-wrap gap-3 text-sm ml-auto">
+                                    <button
+                                        onClick={() => setComplaintStatusFilter(prev => (prev === "PENDING" ? "ALL" : "PENDING"))}
+                                        className={`px-3 py-1 rounded-full font-semibold border ${complaintStatusFilter === "PENDING" ? "bg-red-100 text-red-700 border-red-200 shadow-sm" : "bg-white text-red-600 border-red-100"}`}
+                                    >
+                                        Pending: {complaints.filter(c => c.status === "PENDING").length}
+                                    </button>
+                                    <button
+                                        onClick={() => setComplaintStatusFilter(prev => (prev === "IN_PROGRESS" ? "ALL" : "IN_PROGRESS"))}
+                                        className={`px-3 py-1 rounded-full font-semibold border ${complaintStatusFilter === "IN_PROGRESS" ? "bg-yellow-100 text-yellow-700 border-yellow-200 shadow-sm" : "bg-white text-yellow-600 border-yellow-100"}`}
+                                    >
+                                        In Progress: {complaints.filter(c => c.status === "IN_PROGRESS").length}
+                                    </button>
+                                    <button
+                                        onClick={() => setComplaintStatusFilter(prev => (prev === "RESOLVED" ? "ALL" : "RESOLVED"))}
+                                        className={`px-3 py-1 rounded-full font-semibold border ${complaintStatusFilter === "RESOLVED" ? "bg-green-100 text-green-700 border-green-200 shadow-sm" : "bg-white text-green-600 border-green-100"}`}
+                                    >
+                                        Resolved: {complaints.filter(c => c.status === "RESOLVED").length}
+                                    </button>
                                 </div>
                             </div>
                             <div className="px-5 py-3 border-b flex flex-wrap items-center gap-3">
-                                <button
-                                    onClick={() => setComplaintStatusFilter("ALL")}
-                                    className={`px-3 py-1 rounded text-xs font-semibold ${complaintStatusFilter === "ALL" ? "bg-purple-100 text-purple-700" : "bg-gray-100 text-gray-600"}`}
-                                >
-                                    All
-                                </button>
-                                <button
-                                    onClick={() => setComplaintStatusFilter("PENDING")}
-                                    className={`px-3 py-1 rounded text-xs font-semibold ${complaintStatusFilter === "PENDING" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"}`}
-                                >
-                                    Pending
-                                </button>
-                                <button
-                                    onClick={() => setComplaintStatusFilter("IN_PROGRESS")}
-                                    className={`px-3 py-1 rounded text-xs font-semibold ${complaintStatusFilter === "IN_PROGRESS" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600"}`}
-                                >
-                                    In Progress
-                                </button>
-                                <button
-                                    onClick={() => setComplaintStatusFilter("RESOLVED")}
-                                    className={`px-3 py-1 rounded text-xs font-semibold ${complaintStatusFilter === "RESOLVED" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}
-                                >
-                                    Resolved
-                                </button>
                                 <select
                                     value={complaintDeptFilter}
                                     onChange={e => setComplaintDeptFilter(e.target.value)}
@@ -364,6 +364,12 @@ const SuperAdminDashboard = () => {
                                     <option value="">All Departments</option>
                                     {complaintDepartments.map(d => <option key={d} value={d}>{d}</option>)}
                                 </select>
+                                <button
+                                    onClick={() => { setComplaintStatusFilter("ALL"); setComplaintDeptFilter(""); }}
+                                    className="px-3 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                >
+                                    Clear Filters
+                                </button>
                                 <span className="text-xs text-gray-500 ml-auto">{filteredComplaints.length} results</span>
                             </div>
                             <div className="overflow-x-auto">

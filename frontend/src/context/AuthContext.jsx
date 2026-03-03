@@ -13,25 +13,28 @@ export const AuthProvider = ({ children }) => {
             const stationName = localStorage.getItem("stationName") || "";
             const username = localStorage.getItem("username") || "";
             const fullName = localStorage.getItem("fullName") || "";
-            setUser({ token, role, stationName, username, fullName });
+            const trainNumber = localStorage.getItem("trainNumber") || "";
+            setUser({ token, role, stationName, username, fullName, trainNumber });
         } else {
             setUser(null);
         }
     }, [token]);
 
-    const login = (token, role, stationName, username, fullName) => {
+    const login = (token, role, stationName, username, fullName, trainNumber) => {
         setToken(token);
         localStorage.setItem("token", token);
         localStorage.setItem("role", role);
         if (stationName) localStorage.setItem("stationName", stationName);
         if (username) localStorage.setItem("username", username);
         if (fullName) localStorage.setItem("fullName", fullName);
+        if (trainNumber) localStorage.setItem("trainNumber", trainNumber);
         setUser({
             token,
             role,
             stationName: stationName || "",
             username: username || "",
             fullName: fullName || "",
+            trainNumber: trainNumber || "",
         });
     };
 
@@ -42,6 +45,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem("stationName");
         localStorage.removeItem("username");
         localStorage.removeItem("fullName");
+        localStorage.removeItem("trainNumber");
         setUser(null);
     };
 

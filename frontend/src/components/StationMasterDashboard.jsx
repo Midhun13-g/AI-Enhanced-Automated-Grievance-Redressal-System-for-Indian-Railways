@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useContext } from "react";
+﻿import React, { useEffect, useState, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 import { AuthContext } from "../context/AuthContext";
@@ -32,6 +32,8 @@ const StationMasterDashboard = () => {
     const [opIssues, setOpIssues] = useState({
         platform: "Normal", water: "Normal", electricity: "Normal", maintenance: "Pending",
     });
+    const [sosNotice, setSosNotice] = useState("");
+    const prevSosIdsRef = useRef(new Set());
 
     const stationName = user?.stationName || user?.station || "Your Station";
 
@@ -134,12 +136,32 @@ const StationMasterDashboard = () => {
             text.includes("bomb") ||
             text.includes("medical emergency");
         const highUrgency = (complaint.urgencyScore || 0) >= 80;
-        return highUrgency && highRiskKeyword;
+        return highUrgency || highRiskKeyword;
     };
 
     const sosComplaints = complaints.filter(
         (c) => c.status !== "RESOLVED" && isHighEmergency(c)
     );
+
+    useEffect(() => {
+        const currentIds = new Set(sosComplaints.map(c => c.id));
+        const previousIds = prevSosIdsRef.current;
+        const newOnes = sosComplaints.filter(c => !previousIds.has(c.id));
+
+        if (newOnes.length > 0) {
+            const sample = newOnes.slice(0, 3).map(c => `#${c.id}`).join(", ");
+            const extra = newOnes.length > 3 ? ` +${newOnes.length - 3} more` : "";
+            setSosNotice(`New SOS alert(s): ${sample}${extra}`);
+        }
+
+        prevSosIdsRef.current = currentIds;
+    }, [sosComplaints]);
+
+    useEffect(() => {
+        if (!sosNotice) return;
+        const timer = setTimeout(() => setSosNotice(""), 6000);
+        return () => clearTimeout(timer);
+    }, [sosNotice]);
 
     const today = new Date().toISOString().split("T")[0];
     const todayCount = complaints.filter(c => c.createdAt?.startsWith(today)).length;
@@ -198,6 +220,23 @@ const StationMasterDashboard = () => {
                 </div>
 
                 <div className="p-8">
+                    {sosNotice && (
+                        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex flex-wrap items-center gap-3">
+                            <span className="text-sm font-semibold">{sosNotice}</span>
+                            <button
+                                onClick={() => setActiveSection("SOS Alerts")}
+                                className="ml-auto bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700"
+                            >
+                                View SOS
+                            </button>
+                            <button
+                                onClick={() => setSosNotice("")}
+                                className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded hover:bg-gray-200"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    )}
                     {/* ===== DASHBOARD ===== */}
                     {activeSection === "Dashboard" && (
                         <div>
@@ -312,7 +351,7 @@ const StationMasterDashboard = () => {
                             <div className="p-5 border-b flex flex-wrap gap-3 items-center">
                                 <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
                                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400">
-                                    <option value="">All Statuses</option>
+                                    <option value="">All Status</option>
                                     <option value="PENDING">Pending</option>
                                     <option value="IN_PROGRESS">In Progress</option>
                                     <option value="RESOLVED">Resolved</option>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../api";
 import { AuthContext } from "../context/AuthContext";
@@ -13,7 +13,7 @@ const StatusBadge = ({ status }) => {
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    const { logout } = useContext(AuthContext);
+    const { logout, user } = useContext(AuthContext);
     const [analytics, setAnalytics] = useState({});
     const [topIssues, setTopIssues] = useState([]);
     const [complaints, setComplaints] = useState([]);
@@ -24,6 +24,10 @@ const AdminDashboard = () => {
     const [officers, setOfficers] = useState([]);
     const [newOfficer, setNewOfficer] = useState({ name: "", badge: "", email: "" });
     const [officerMsg, setOfficerMsg] = useState("");
+    const [trainNumber, setTrainNumber] = useState("");
+    const [trainMsg, setTrainMsg] = useState("");
+    const [rpfNotice, setRpfNotice] = useState("");
+    const prevRpfIdsRef = useRef(new Set());
 
     const handleLogout = () => { logout(); navigate("/login"); };
 
@@ -36,40 +40,91 @@ const AdminDashboard = () => {
             .catch(() => setLoading(false));
     }, []);
 
+    useEffect(() => {
+        const saved = (user?.trainNumber || localStorage.getItem("trainNumber") || "").trim();
+        setTrainNumber(saved);
+    }, [user]);
+
     const handleStatusUpdate = (id, newStatus) => {
         API.patch(`/complaints/${id}/status`, { newStatus })
             .then(() => setComplaints(c => c.map(comp => comp.id === id ? { ...comp, status: newStatus } : comp)))
             .catch(() => { });
     };
 
-    const filteredComplaints = complaints.filter(c => {
+    const getPriority = (score) => {
+        if ((score || 0) >= 80) return "HIGH";
+        if ((score || 0) >= 60) return "MEDIUM";
+        return "LOW";
+    };
+
+    const matchesSecurityDept = (complaint) => {
+        const dept = (complaint.department || complaint.category || "").toLowerCase();
+        return dept.includes("security") || dept.includes("emergency");
+    };
+
+    const isMedicalForRpf = (complaint) => {
+        const dept = (complaint.department || complaint.category || "").toLowerCase();
+        if (!dept.includes("medical")) return false;
+        return getPriority(complaint.urgencyScore || 0) !== "LOW";
+    };
+
+    const normalizeTrain = (value) => (value || "").trim().toLowerCase();
+    const trainMatch = (complaint) => {
+        if (!trainNumber) return false;
+        return normalizeTrain(complaint.trainNumber) === normalizeTrain(trainNumber);
+    };
+
+    const rpfComplaints = complaints.filter(c => (matchesSecurityDept(c) || isMedicalForRpf(c)) && trainMatch(c));
+
+    const filteredComplaints = rpfComplaints.filter(c => {
         const matchStatus = filterStatus ? c.status === filterStatus : true;
-        const matchDept = filterDept ? (c.department || "").toLowerCase().includes(filterDept.toLowerCase()) : true;
+        const matchDept = filterDept ? (c.department || c.category || "").toLowerCase().includes(filterDept.toLowerCase()) : true;
         return matchStatus && matchDept;
     });
 
-    const isHighEmergency = (complaint) => {
-        const text = (complaint.complaintText || "").toLowerCase();
-        const highRiskKeyword =
-            text.includes("sos") ||
-            text.includes("emergency") ||
-            text.includes("attack") ||
-            text.includes("assault") ||
-            text.includes("harass") ||
-            text.includes("theft") ||
-            text.includes("snatch") ||
-            text.includes("fight") ||
-            text.includes("weapon") ||
-            text.includes("fire") ||
-            text.includes("bomb") ||
-            text.includes("medical emergency");
-        const highUrgency = (complaint.urgencyScore || 0) >= 80;
-        return highUrgency && highRiskKeyword;
+    const isRpfAlert = (complaint) => {
+        if (!(matchesSecurityDept(complaint) || isMedicalForRpf(complaint))) return false;
+        const priority = getPriority(complaint.urgencyScore || 0);
+        return priority !== "LOW";
     };
 
-    const sosComplaints = complaints.filter(
-        (c) => c.status !== "RESOLVED" && isHighEmergency(c)
+    const sosComplaints = rpfComplaints.filter(
+        (c) => c.status !== "RESOLVED" && isRpfAlert(c)
     );
+
+    useEffect(() => {
+        const currentIds = new Set(sosComplaints.map(c => c.id));
+        const previousIds = prevRpfIdsRef.current;
+        const newOnes = sosComplaints.filter(c => !previousIds.has(c.id));
+
+        if (newOnes.length > 0) {
+            const sample = newOnes.slice(0, 3).map(c => `#${c.id}`).join(", ");
+            const extra = newOnes.length > 3 ? ` +${newOnes.length - 3} more` : "";
+            setRpfNotice(`New Security/Emergency alerts: ${sample}${extra}`);
+        }
+
+        prevRpfIdsRef.current = currentIds;
+    }, [sosComplaints]);
+
+    useEffect(() => {
+        if (!rpfNotice) return;
+        const timer = setTimeout(() => setRpfNotice(""), 6000);
+        return () => clearTimeout(timer);
+    }, [rpfNotice]);
+
+    const handleTrainSave = async () => {
+        try {
+            const payload = { trainNumber: (trainNumber || "").trim() };
+            const res = await API.patch("/users/me/train-number", payload);
+            const value = res.data?.trainNumber || payload.trainNumber || "";
+            localStorage.setItem("trainNumber", value);
+            setTrainNumber(value);
+            setTrainMsg("Train number updated.");
+        } catch {
+            setTrainMsg("Failed to update train number.");
+        }
+        setTimeout(() => setTrainMsg(""), 3000);
+    };
 
     const handleAddOfficer = (e) => {
         e.preventDefault();
@@ -81,11 +136,11 @@ const AdminDashboard = () => {
     };
 
     const today = new Date().toISOString().split("T")[0];
-    const complaintsToday = complaints.filter(c => c.createdAt?.startsWith(today)).length;
-    const resolutionRate = complaints.length
-        ? Math.round((complaints.filter(c => c.status === "RESOLVED").length / complaints.length) * 100)
+    const complaintsToday = rpfComplaints.filter(c => c.createdAt?.startsWith(today)).length;
+    const resolutionRate = rpfComplaints.length
+        ? Math.round((rpfComplaints.filter(c => c.status === "RESOLVED").length / rpfComplaints.length) * 100)
         : 0;
-    const recentComplaints = [...complaints]
+    const recentComplaints = [...rpfComplaints]
         .sort((a, b) => {
             const aTime = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
             const bTime = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -97,7 +152,7 @@ const AdminDashboard = () => {
         const email = o.email || o.username || "";
         const displayName = (o.fullName && o.fullName.trim())
             || (email ? email.split("@")[0] : "Officer");
-        const activeCases = complaints.filter(
+        const activeCases = rpfComplaints.filter(
             (c) => c.assignedTo === o.username && c.status !== "RESOLVED"
         ).length;
 
@@ -107,6 +162,7 @@ const AdminDashboard = () => {
             badge: o.badge || `RPF-${o.id}`,
             email: email || "—",
             station: (o.station || "").trim() || "Unassigned",
+            trainNumber: (o.trainNumber || "").trim() || "-",
             activeCases,
         };
     });
@@ -155,14 +211,55 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="p-8">
+                    {rpfNotice && (
+                        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex flex-wrap items-center gap-3">
+                            <span className="text-sm font-semibold">{rpfNotice}</span>
+                            <button
+                                onClick={() => setActiveSection("SOS Alerts")}
+                                className="ml-auto bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700"
+                            >
+                                View Alerts
+                            </button>
+                            <button
+                                onClick={() => setRpfNotice("")}
+                                className="bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded hover:bg-gray-200"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    )}
                     {/* ===== DASHBOARD ===== */}
                     {activeSection === "Dashboard" && (
                         <div>
+                            <div className="bg-white rounded-xl shadow p-5 mb-6 flex flex-wrap items-end gap-3">
+                                <div className="flex-1 min-w-[220px]">
+                                    <label className="block text-xs text-gray-500 mb-1">Assigned Train Number</label>
+                                    <input
+                                        type="text"
+                                        value={trainNumber}
+                                        onChange={(e) => setTrainNumber(e.target.value)}
+                                        placeholder="e.g. 12627"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleTrainSave}
+                                    className="bg-orange-500 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-orange-600"
+                                >
+                                    Save Train
+                                </button>
+                                {trainMsg && <span className="text-xs text-gray-600">{trainMsg}</span>}
+                            </div>
+                            {!trainNumber && (
+                                <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg text-sm">
+                                    Set your train number to receive security/emergency complaints assigned to your train.
+                                </div>
+                            )}
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                                 {[
-                                    { label: "Total Complaints", value: complaints.length, color: "border-blue-500", text: "text-blue-600" },
-                                    { label: "Pending", value: complaints.filter(c => c.status === "PENDING").length, color: "border-red-500", text: "text-red-600" },
-                                    { label: "Resolved", value: complaints.filter(c => c.status === "RESOLVED").length, color: "border-green-500", text: "text-green-600" },
+                                    { label: "Total Complaints", value: rpfComplaints.length, color: "border-blue-500", text: "text-blue-600" },
+                                    { label: "Pending", value: rpfComplaints.filter(c => c.status === "PENDING").length, color: "border-red-500", text: "text-red-600" },
+                                    { label: "Resolved", value: rpfComplaints.filter(c => c.status === "RESOLVED").length, color: "border-green-500", text: "text-green-600" },
                                     { label: "Active SOS", value: sosComplaints.length, color: "border-orange-500", text: "text-orange-600" },
                                     { label: "Today", value: complaintsToday, color: "border-purple-500", text: "text-purple-600" },
                                 ].map(s => (
@@ -183,7 +280,7 @@ const AdminDashboard = () => {
                             </div>
                             <div className="bg-white rounded-xl shadow">
                                 <div className="p-5 border-b flex justify-between items-center">
-                                    <h3 className="font-bold text-gray-800">Recent Complaints</h3>
+                                    <h3 className="font-bold text-gray-800">Recent Security Complaints</h3>
                                     <button onClick={() => setActiveSection("Complaints")} className="text-orange-500 text-sm hover:underline">View All →</button>
                                 </div>
                                 <div className="overflow-x-auto">
@@ -193,18 +290,22 @@ const AdminDashboard = () => {
                                                 <th className="py-3 px-4 text-left">#</th>
                                                 <th className="py-3 px-4 text-left">Passenger</th>
                                                 <th className="py-3 px-4 text-left">Complaint</th>
+                                                <th className="py-3 px-4 text-left">Train</th>
+                                                <th className="py-3 px-4 text-left">Priority</th>
                                                 <th className="py-3 px-4 text-left">Status</th>
                                                 <th className="py-3 px-4 text-left">Date</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {loading ? (
-                                                <tr><td colSpan="5" className="py-6 text-center text-gray-400">Loading...</td></tr>
+                                                <tr><td colSpan="7" className="py-6 text-center text-gray-400">Loading...</td></tr>
                                             ) : recentComplaints.map(c => (
                                                 <tr key={c.id} className="border-b hover:bg-orange-50">
                                                     <td className="py-3 px-4 text-orange-600 font-semibold">#{c.id}</td>
                                                     <td className="py-3 px-4">{c.passengerName}</td>
                                                     <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
+                                                    <td className="py-3 px-4 text-gray-500">{c.trainNumber || "-"}</td>
+                                                    <td className="py-3 px-4 text-xs font-semibold text-gray-600">{getPriority(c.urgencyScore)}</td>
                                                     <td className="py-3 px-4"><StatusBadge status={c.status} /></td>
                                                     <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
                                                 </tr>
@@ -237,7 +338,7 @@ const AdminDashboard = () => {
                             <div className="p-5 border-b flex flex-wrap gap-3 items-center">
                                 <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
                                     className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400">
-                                    <option value="">All Statuses</option>
+                                    <option value="">All Status</option>
                                     <option value="PENDING">Pending</option>
                                     <option value="IN_PROGRESS">In Progress</option>
                                     <option value="RESOLVED">Resolved</option>
@@ -255,6 +356,8 @@ const AdminDashboard = () => {
                                             <th className="py-3 px-4 text-left">Passenger</th>
                                             <th className="py-3 px-4 text-left">Complaint</th>
                                             <th className="py-3 px-4 text-left">Dept</th>
+                                            <th className="py-3 px-4 text-left">Train</th>
+                                            <th className="py-3 px-4 text-left">Priority</th>
                                             <th className="py-3 px-4 text-left">Status</th>
                                             <th className="py-3 px-4 text-left">Date</th>
                                             <th className="py-3 px-4 text-left">Actions</th>
@@ -262,9 +365,9 @@ const AdminDashboard = () => {
                                     </thead>
                                     <tbody>
                                         {loading ? (
-                                            <tr><td colSpan="7" className="py-8 text-center text-gray-400">Loading...</td></tr>
+                                            <tr><td colSpan="9" className="py-8 text-center text-gray-400">Loading...</td></tr>
                                         ) : filteredComplaints.length === 0 ? (
-                                            <tr><td colSpan="7" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
+                                            <tr><td colSpan="9" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
                                         ) : filteredComplaints.map(c => (
                                             <tr key={c.id} className="border-b hover:bg-orange-50">
                                                 <td className="py-3 px-4 text-orange-600 font-semibold">#{c.id}</td>
@@ -274,7 +377,7 @@ const AdminDashboard = () => {
                                                 <td className="py-3 px-4"><StatusBadge status={c.status} /></td>
                                                 <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
                                                 <td className="py-3 px-4 flex gap-2">
-                                                    {c.status !== "IN_PROGRESS" && (
+                                                    {c.status === "PENDING" && (
                                                         <button onClick={() => handleStatusUpdate(c.id, "IN_PROGRESS")}
                                                             className="bg-yellow-500 text-white text-xs px-2 py-1 rounded hover:bg-yellow-600">Progress</button>
                                                     )}
@@ -351,6 +454,7 @@ const AdminDashboard = () => {
                                             <th className="py-3 px-4 text-left">Badge</th>
                                             <th className="py-3 px-4 text-left">Email</th>
                                             <th className="py-3 px-4 text-left">Station</th>
+                                            <th className="py-3 px-4 text-left">Train No</th>
                                             <th className="py-3 px-4 text-left">Active Cases</th>
                                         </tr>
                                     </thead>
@@ -361,6 +465,7 @@ const AdminDashboard = () => {
                                                 <td className="py-3 px-4 text-gray-500">{o.badge}</td>
                                                 <td className="py-3 px-4 text-gray-500">{o.email}</td>
                                                 <td className="py-3 px-4 text-gray-500">{o.station}</td>
+                                                <td className="py-3 px-4 text-gray-500">{o.trainNumber}</td>
                                                 <td className="py-3 px-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">{o.activeCases} cases</span></td>
                                             </tr>
                                         ))}
