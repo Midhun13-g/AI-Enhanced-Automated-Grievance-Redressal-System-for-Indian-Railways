@@ -4,7 +4,7 @@ import API from "../api";
 import { AuthContext } from "../context/AuthContext";
 
 const SECTIONS = ["My Tasks", "History", "Profile"];
-const ICONS = { "My Tasks": "MT", History: "HS", Profile: "PR" };
+const ICONS = { "My Tasks": "📝", History: "📚", Profile: "👤" };
 
 const StatusBadge = ({ status }) => {
     const map = {

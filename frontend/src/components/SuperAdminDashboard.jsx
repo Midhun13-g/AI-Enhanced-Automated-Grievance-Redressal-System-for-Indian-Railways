@@ -4,7 +4,7 @@ import API from "../api";
 import { AuthContext } from "../context/AuthContext";
 
 const SECTIONS = ["Overview", "All Users", "Create User", "Complaints"];
-const ICONS = { Overview: "OV", "All Users": "US", "Create User": "+", Complaints: "CP" };
+const ICONS = { Overview: "📊", "All Users": "👥", "Create User": "➕", Complaints: "📋" };
 
 const ROLES = ["USER", "STATION_MASTER", "STATION_STAFF", "RPF_ADMIN", "SUPER_ADMIN"];
 const ROLE_COLORS = {

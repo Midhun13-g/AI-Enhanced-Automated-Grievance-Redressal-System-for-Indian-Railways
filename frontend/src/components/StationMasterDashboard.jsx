@@ -399,26 +399,28 @@ const StationMasterDashboard = () => {
                                                     <td className="py-3 px-4"><StatusBadge status={displayStatus} /></td>
                                                     <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
                                                     <td className="py-3 px-4">
-                                                        <div className="flex flex-wrap gap-1">
-                                                            <button onClick={() => setActiveRemark(activeRemark === c.id ? null : c.id)}
-                                                                className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-200">Remark</button>
-                                                            {!isEscalated && c.status !== "RESOLVED" && !c.assignedTo && (
-                                                                <select defaultValue="" onChange={e => e.target.value && handleAssign(c.id, e.target.value)}
-                                                                    className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded border border-blue-200">
-                                                                    <option value="" disabled>Assign</option>
-                                                                    {staffWithStats.map(s => <option key={s.id} value={s.username}>{s.displayName}</option>)}
-                                                                </select>
-                                                            )}
-                                                            {!isEscalated && c.status !== "RESOLVED" && (
-                                                                <button onClick={() => handleStatusUpdate(c.id, "RESOLVED")}
-                                                                    className="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600">Resolve</button>
-                                                            )}
-                                                            {!isEscalated && (
-                                                                <button onClick={() => handleEscalate(c.id)}
-                                                                    className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600">↑ RPF</button>
-                                                            )}
-                                                        </div>
-                                                        {activeRemark === c.id && (
+                                                        {c.status !== "RESOLVED" && (
+                                                            <div className="flex flex-wrap gap-1">
+                                                                <button onClick={() => setActiveRemark(activeRemark === c.id ? null : c.id)}
+                                                                    className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-200">Remark</button>
+                                                                {!isEscalated && !c.assignedTo && (
+                                                                    <select defaultValue="" onChange={e => e.target.value && handleAssign(c.id, e.target.value)}
+                                                                        className="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded border border-blue-200">
+                                                                        <option value="" disabled>Assign</option>
+                                                                        {staffWithStats.map(s => <option key={s.id} value={s.username}>{s.displayName}</option>)}
+                                                                    </select>
+                                                                )}
+                                                                {!isEscalated && (
+                                                                    <button onClick={() => handleStatusUpdate(c.id, "RESOLVED")}
+                                                                        className="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600">Resolve</button>
+                                                                )}
+                                                                {!isEscalated && (
+                                                                    <button onClick={() => handleEscalate(c.id)}
+                                                                        className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600">↑ RPF</button>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {activeRemark === c.id && c.status !== "RESOLVED" && (
                                                             <div className="mt-2 flex gap-2">
                                                                 <input
                                                                     type="text"

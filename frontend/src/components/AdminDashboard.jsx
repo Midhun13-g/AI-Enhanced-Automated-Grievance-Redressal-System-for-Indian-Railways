@@ -376,14 +376,16 @@ const AdminDashboard = () => {
                                                 <td className="py-3 px-4 text-gray-400">{c.department || "—"}</td>
                                                 <td className="py-3 px-4"><StatusBadge status={c.status} /></td>
                                                 <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
-                                                <td className="py-3 px-4 flex gap-2">
-                                                    {c.status === "PENDING" && (
-                                                        <button onClick={() => handleStatusUpdate(c.id, "IN_PROGRESS")}
-                                                            className="bg-yellow-500 text-white text-xs px-2 py-1 rounded hover:bg-yellow-600">Progress</button>
-                                                    )}
+                                                <td className="py-3 px-4">
                                                     {c.status !== "RESOLVED" && (
-                                                        <button onClick={() => handleStatusUpdate(c.id, "RESOLVED")}
-                                                            className="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600">Resolve</button>
+                                                        <div className="flex gap-2">
+                                                            {c.status === "PENDING" && (
+                                                                <button onClick={() => handleStatusUpdate(c.id, "IN_PROGRESS")}
+                                                                    className="bg-yellow-500 text-white text-xs px-2 py-1 rounded hover:bg-yellow-600">Progress</button>
+                                                            )}
+                                                            <button onClick={() => handleStatusUpdate(c.id, "RESOLVED")}
+                                                                className="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600">Resolve</button>
+                                                        </div>
                                                     )}
                                                 </td>
                                             </tr>

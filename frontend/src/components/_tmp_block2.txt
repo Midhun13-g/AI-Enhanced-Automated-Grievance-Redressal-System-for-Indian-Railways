@@ -1,0 +1,9 @@
+filteredComplaints.map(c => (
+                                            <tr key={c.id} className="border-b hover:bg-orange-50">
+                                                <td className="py-3 px-4 text-orange-600 font-semibold">#{c.id}</td>
+                                                <td className="py-3 px-4">{c.passengerName}</td>
+                                                <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
+                                                <td className="py-3 px-4 text-gray-400">{c.department || "—"}</td>
+                                                <td className="py-3 px-4"><StatusBadge status={c.status} /></td>
+                                                <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
+                                                
