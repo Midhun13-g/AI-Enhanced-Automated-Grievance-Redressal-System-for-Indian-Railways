@@ -175,7 +175,7 @@ const AdminDashboard = () => {
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center text-lg">🚂</div>
                         <div>
-                            <div className="font-bold text-white text-sm">RailMadad</div>
+                            <div className="font-bold text-white text-sm">RailPal</div>
                             <div className="text-slate-400 text-xs">RPF Admin Panel</div>
                         </div>
                     </div>
@@ -287,7 +287,6 @@ const AdminDashboard = () => {
                                     <table className="min-w-full text-sm">
                                         <thead className="bg-gray-50 text-gray-600">
                                             <tr>
-                                                <th className="py-3 px-4 text-left">#</th>
                                                 <th className="py-3 px-4 text-left">Passenger</th>
                                                 <th className="py-3 px-4 text-left">Complaint</th>
                                                 <th className="py-3 px-4 text-left">Train</th>
@@ -298,10 +297,9 @@ const AdminDashboard = () => {
                                         </thead>
                                         <tbody>
                                             {loading ? (
-                                                <tr><td colSpan="7" className="py-6 text-center text-gray-400">Loading...</td></tr>
+                                                <tr><td colSpan="6" className="py-6 text-center text-gray-400">Loading...</td></tr>
                                             ) : recentComplaints.map(c => (
                                                 <tr key={c.id} className="border-b hover:bg-orange-50">
-                                                    <td className="py-3 px-4 text-orange-600 font-semibold">#{c.id}</td>
                                                     <td className="py-3 px-4">{c.passengerName}</td>
                                                     <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
                                                     <td className="py-3 px-4 text-gray-500">{c.trainNumber || "-"}</td>
@@ -320,8 +318,7 @@ const AdminDashboard = () => {
                                     {sosComplaints.slice(0, 2).map(c => (
                                         <div key={c.id} className="bg-white border border-red-200 rounded-lg p-3 mb-2 flex justify-between items-center">
                                             <div>
-                                                <span className="font-bold text-red-600">#{c.id}</span>
-                                                <span className="ml-2 text-gray-700">{c.passengerName}</span>
+                                                <span className="text-gray-700 font-semibold">{c.passengerName}</span>
                                                 <p className="text-gray-500 text-xs truncate">{c.complaintText}</p>
                                             </div>
                                             <button onClick={() => setActiveSection("SOS Alerts")} className="bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700">View</button>
@@ -409,7 +406,7 @@ const AdminDashboard = () => {
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-red-600 font-bold text-lg">🚨 SOS #{c.id}</span>
+                                                <span className="text-red-600 font-bold text-lg">🚨 SOS</span>
                                                 <StatusBadge status={c.status} />
                                             </div>
                                             <p className="font-semibold text-gray-800">{c.passengerName}</p>

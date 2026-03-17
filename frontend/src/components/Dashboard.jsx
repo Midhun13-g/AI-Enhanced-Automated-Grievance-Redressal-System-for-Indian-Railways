@@ -61,7 +61,6 @@ const Dashboard = () => {
                             <table className="min-w-full">
                                 <thead className="bg-gradient-to-r from-orange-600 to-orange-500 text-white">
                                     <tr>
-                                        <th className="py-3 px-4 text-left font-semibold">ID</th>
                                         <th className="py-3 px-4 text-left font-semibold">Passenger</th>
                                         <th className="py-3 px-4 text-left font-semibold">Complaint</th>
                                         <th className="py-3 px-4 text-left font-semibold">Route</th>
@@ -73,14 +72,13 @@ const Dashboard = () => {
                                 <tbody>
                                     {complaints.length === 0 ? (
                                         <tr>
-                                            <td colSpan="7" className="py-8 text-center text-gray-500">
+                                            <td colSpan="6" className="py-8 text-center text-gray-500">
                                                 No complaints found. <Link to="/complaints/new" className="text-orange-600 hover:underline">Submit your first grievance</Link>.
                                             </td>
                                         </tr>
                                     ) : (
                                         complaints.map((c) => (
                                             <tr key={c.id} className="border-b hover:bg-orange-50 transition">
-                                                <td className="py-3 px-4 font-semibold text-orange-600">#{c.id}</td>
                                                 <td className="py-3 px-4">{c.passengerName}</td>
                                                 <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
                                                 <td className="py-3 px-4 text-sm text-gray-600">

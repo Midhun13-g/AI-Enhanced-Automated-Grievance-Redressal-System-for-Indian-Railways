@@ -183,7 +183,7 @@ const StationMasterDashboard = () => {
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-lg">🚉</div>
                         <div>
-                            <div className="font-bold text-white text-sm">RailMadad</div>
+                            <div className="font-bold text-white text-sm">RailPal</div>
                             <div className="text-teal-200 text-xs truncate max-w-[130px]">{stationName}</div>
                         </div>
                     </div>
@@ -303,7 +303,6 @@ const StationMasterDashboard = () => {
                                     <table className="min-w-full text-sm">
                                         <thead className="bg-gray-50 text-gray-600">
                                             <tr>
-                                                <th className="py-3 px-4 text-left">#</th>
                                                 <th className="py-3 px-4 text-left">Passenger</th>
                                                 <th className="py-3 px-4 text-left">Complaint</th>
                                                 <th className="py-3 px-4 text-left">Status</th>
@@ -312,10 +311,9 @@ const StationMasterDashboard = () => {
                                         </thead>
                                         <tbody>
                                             {loading ? (
-                                                <tr><td colSpan="5" className="py-6 text-center text-gray-400">Loading...</td></tr>
+                                                <tr><td colSpan="4" className="py-6 text-center text-gray-400">Loading...</td></tr>
                                             ) : complaints.slice(0, 5).map(c => (
                                                 <tr key={c.id} className="border-b hover:bg-teal-50">
-                                                    <td className="py-3 px-4 text-teal-600 font-semibold">#{c.id}</td>
                                                     <td className="py-3 px-4">{c.passengerName}</td>
                                                     <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
                                                     <td className="py-3 px-4"><StatusBadge status={escalatedIds.includes(c.id) ? "ESCALATED" : c.status} /></td>
@@ -333,8 +331,7 @@ const StationMasterDashboard = () => {
                                     {sosComplaints.slice(0, 2).map(c => (
                                         <div key={c.id} className="bg-white border border-red-200 rounded-lg p-3 mb-2 flex justify-between items-center">
                                             <div>
-                                                <span className="font-bold text-red-600">#{c.id}</span>
-                                                <span className="ml-2 text-gray-700">{c.passengerName}</span>
+                                                <span className="text-gray-700 font-semibold">{c.passengerName}</span>
                                                 <p className="text-gray-500 text-xs truncate">{c.complaintText}</p>
                                             </div>
                                             <button onClick={() => setActiveSection("SOS Alerts")} className="bg-red-600 text-white text-xs px-3 py-1 rounded hover:bg-red-700">Respond</button>
@@ -456,7 +453,7 @@ const StationMasterDashboard = () => {
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-red-600 font-bold text-lg animate-pulse">🚨 SOS #{c.id}</span>
+                                                <span className="text-red-600 font-bold text-lg animate-pulse">🚨 SOS</span>
                                                 <StatusBadge status={escalatedIds.includes(c.id) ? "ESCALATED" : c.status} />
                                             </div>
                                             <p className="font-semibold text-gray-800 text-lg">{c.passengerName}</p>
