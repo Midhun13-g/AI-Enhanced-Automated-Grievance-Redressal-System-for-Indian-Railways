@@ -15,7 +15,7 @@ const Navbar = ({ onLogout }) => {
                             <span className="text-orange-600 font-bold text-xl">🚂</span>
                         </div>
                         <div>
-                            <h1 className="text-white font-bold text-xl">RailMadad</h1>
+                            <h1 className="text-white font-bold text-xl">RailPal</h1>
                             <p className="text-orange-100 text-xs">For Inquiry, Assistance & Grievance Redressal</p>
                         </div>
                     </div>

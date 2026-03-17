@@ -91,7 +91,7 @@ const StaffDashboard = () => {
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center text-sm font-bold">SS</div>
                         <div>
-                            <div className="font-bold text-white text-sm">RailMadad</div>
+                            <div className="font-bold text-white text-sm">RailPal</div>
                             <div className="text-indigo-200 text-xs">Station Staff Portal</div>
                         </div>
                     </div>

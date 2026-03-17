@@ -83,7 +83,7 @@ const Signup = () => {
                         <span className="text-orange-600 font-bold text-xl">🚂</span>
                     </div>
                     <div>
-                        <h1 className="text-white font-bold text-2xl">RailMadad</h1>
+                        <h1 className="text-white font-bold text-2xl">RailPal</h1>
                         <p className="text-orange-100 text-sm">Railway Grievance Redressal System</p>
                     </div>
                 </div>

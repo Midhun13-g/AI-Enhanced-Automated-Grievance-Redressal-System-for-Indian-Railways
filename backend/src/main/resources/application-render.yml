@@ -34,9 +34,12 @@ jwt:
 app:
   kafka:
     enabled: ${APP_KAFKA_ENABLED:true}
+    topic: ${APP_KAFKA_TOPIC:complaint-classification}
   ai:
     enabled: ${APP_AI_ENABLED:true}
     classifier-url: ${APP_AI_CLASSIFIER_URL:https://midhun-2542-railwaymodel.hf.space/classify}
+  internal:
+    api-key: ${APP_INTERNAL_API_KEY:railway-internal-key}
   officer-signup-key: ${APP_OFFICER_SIGNUP_KEY:RAILMADAD_OFFICER_2026}
 
 logging:

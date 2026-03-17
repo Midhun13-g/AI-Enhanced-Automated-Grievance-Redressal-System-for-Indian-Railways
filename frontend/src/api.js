@@ -12,4 +12,19 @@ API.interceptors.request.use((config) => {
     return config;
 });
 
+API.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("role");
+            localStorage.removeItem("stationName");
+            localStorage.removeItem("username");
+            localStorage.removeItem("fullName");
+            localStorage.removeItem("trainNumber");
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default API;

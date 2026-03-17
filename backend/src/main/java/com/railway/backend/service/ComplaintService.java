@@ -2,8 +2,11 @@ package com.railway.backend.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.railway.backend.dto.ComplaintClassificationUpdateRequest;
 import com.railway.backend.dto.ComplaintRequest;
 import com.railway.backend.dto.ComplaintResponse;
+import com.railway.backend.dto.InternalComplaintDto;
+import com.railway.backend.dto.KafkaComplaintMessage;
 import com.railway.backend.dto.StatusUpdateRequest;
 import com.railway.backend.entity.Complaint;
 import com.railway.backend.entity.ComplaintHistory;
@@ -33,6 +36,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
@@ -43,7 +47,7 @@ public class ComplaintService {
     private final ComplaintRepository complaintRepository;
     private final ComplaintHistoryRepository complaintHistoryRepository;
     private final UserRepository userRepository;
-    private final KafkaTemplate<String, Long> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -53,6 +57,8 @@ public class ComplaintService {
     private boolean aiEnabled;
     @Value("${app.ai.classifier-url:https://midhun-2542-railwaymodel.hf.space/classify}")
     private String aiClassifierUrl;
+    @Value("${app.kafka.topic:complaint-classification}")
+    private String kafkaTopic;
 
     public List<ComplaintResponse> getAllComplaints(Authentication auth) {
         if (auth != null) {
@@ -181,16 +187,59 @@ public class ComplaintService {
                 .aiMetadata(null)
                 .build();
 
-        enrichWithAi(complaint);
         Complaint saved = complaintRepository.save(complaint);
-        if (kafkaEnabled) {
+        if (aiEnabled && kafkaEnabled) {
+            KafkaComplaintMessage kafkaMessage = KafkaComplaintMessage.builder()
+                    .id(saved.getId())
+                    .complaintText(saved.getComplaintText())
+                    .trainNumber(saved.getTrainNumber())
+                    .previousStation(saved.getPreviousStation())
+                    .nextStation(saved.getNextStation())
+                    .build();
             try {
-                kafkaTemplate.send("complaint-classification", saved.getId());
+                kafkaTemplate.send(kafkaTopic, objectMapper.writeValueAsString(kafkaMessage)).get(10, TimeUnit.SECONDS);
+                saved.setAiMetadata(objectMapper.writeValueAsString(Map.of(
+                        "status", "QUEUED",
+                        "topic", kafkaTopic)));
+                saved = complaintRepository.save(saved);
             } catch (Exception ex) {
+                saved.setAiMetadata(buildKafkaFailureMetadata(ex));
+                complaintRepository.save(saved);
                 log.warn("Kafka publish failed for complaint id {}. Complaint is saved; AI enrichment deferred.", saved.getId(), ex);
             }
+        } else {
+            enrichWithAi(saved);
+            saved = complaintRepository.save(saved);
         }
         return toResponse(saved);
+    }
+
+    public InternalComplaintDto getComplaintForMl(Long id) {
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        return InternalComplaintDto.builder()
+                .id(complaint.getId())
+                .complaintText(complaint.getComplaintText())
+                .build();
+    }
+
+    @Transactional
+    public void applyClassificationResult(Long id, ComplaintClassificationUpdateRequest request) {
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+
+        String department = request.getDepartment();
+        if (department == null || department.isBlank()) {
+            department = inferDepartmentFromText(complaint.getComplaintText());
+        }
+
+        complaint.setDepartment(department);
+        complaint.setCategory(department);
+        complaint.setUrgencyScore(request.getUrgencyScore() != null
+                ? request.getUrgencyScore()
+                : mapPriorityToUrgency(request.getPriority()));
+        complaint.setAiMetadata(request.getAiMetadata());
+        complaintRepository.save(complaint);
     }
 
     @Transactional
@@ -368,6 +417,17 @@ public class ComplaintService {
             return 70;
         }
         return 35;
+    }
+
+    private String buildKafkaFailureMetadata(Exception ex) {
+        try {
+            return objectMapper.writeValueAsString(Map.of(
+                    "status", "FAILED",
+                    "topic", kafkaTopic,
+                    "error", ex.getClass().getSimpleName()));
+        } catch (Exception ignored) {
+            return "{\"status\":\"FAILED\",\"topic\":\"" + kafkaTopic + "\"}";
+        }
     }
 
     private String inferPriorityFromDepartment(String department) {

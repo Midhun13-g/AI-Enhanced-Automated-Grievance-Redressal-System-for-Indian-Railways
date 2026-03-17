@@ -75,7 +75,19 @@ const ComplaintForm = () => {
                 navigate("/complaints");
             }, 2000);
         } catch (err) {
-            setError(err.response?.data?.message || "Failed to submit complaint");
+            const responseData = err.response?.data;
+            if (typeof responseData?.message === "string" && responseData.message.trim()) {
+                setError(responseData.message);
+            } else if (responseData && typeof responseData === "object") {
+                const details = Object.entries(responseData)
+                    .map(([field, message]) => `${field}: ${message}`)
+                    .join(", ");
+                setError(details || "Failed to submit complaint");
+            } else if (err.response?.status === 401 || err.response?.status === 403) {
+                setError("Your session expired. Please log in again.");
+            } else {
+                setError("Failed to submit complaint");
+            }
         } finally {
             setLoading(false);
         }

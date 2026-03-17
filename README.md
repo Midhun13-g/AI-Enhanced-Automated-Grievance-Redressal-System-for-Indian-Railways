@@ -39,6 +39,25 @@ A production-ready, microservices-based system for railway grievance redressal, 
    - PostgreSQL: localhost:5432
    - Kafka: localhost:9092
 
+## Local Kafka For Development
+
+If you want Kafka on your machine and the backend running from IntelliJ or `mvnw`, use the local Kafka compose file:
+
+```sh
+docker compose -f infra/kafka-local/docker-compose.yml up -d
+```
+
+Then run the backend with:
+
+```sh
+cd backend
+set APP_KAFKA_ENABLED=true
+set KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+./mvnw spring-boot:run "-Dspring-boot.run.profiles=dev"
+```
+
+Full instructions are in [docs/local-kafka-setup.md](docs/local-kafka-setup.md).
+
 ## Testing
 
 - Backend: JUnit tests in `src/test/java`

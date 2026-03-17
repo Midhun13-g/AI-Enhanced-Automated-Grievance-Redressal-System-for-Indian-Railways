@@ -1,0 +1,67 @@
+docker run -> 
+docker-compose up -d
+
+docker producer side(complaining) -> 
+docker exec -it kafka kafka-console-producer --topic complaint-topic --bootstrap-server localhost:9092
+
+open new terminal and run (consumer side) -> 
+docker exec -it kafka kafka-console-consumer --topic complaint-topic --from-beginning --bootstrap-server localhost:9092
+
+docker stop -> 
+docker compose down  (run in terminal 1)
+
+check container-> 
+docker ps (both kafka and zookepper works)
+
+create topic -> 
+docker exec -it kafka kafka-topics --create --topic complaint-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+
+topic exist or not -> 
+docker exec -it kafka kafka-topics --list --bootstrap-server localhost:9092
+
+overall reset -> 
+docker compose down -v
+
+
+steps: 
+
+1.start the kafka
+docker compose up -d
+
+2.check container running
+docker ps
+
+output:
+kafka       Up ...
+zookeeper   Up ...
+
+3.create topic 
+docker exec -it kafka kafka-topics --create --topic complaint-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+
+4.verify topic
+docker exec -it kafka kafka-topics --list --bootstrap-server localhost:9092
+
+output: complaint-topic
+
+5.send message(producer side)
+docker exec -it kafka kafka-console-producer --topic complaint-topic --bootstrap-server localhost:9092
+
+type: FIRST_TEST_MESSAGE
+ctrl+check
+
+6.open another terminal for checking consumer side message 
+docker exec -it kafka kafka-console-consumer --topic complaint-topic --from-beginning --bootstrap-server localhost:9092
+
+7.restart the kafka for checking previous message exist or not
+docker compose down
+docker compose up -d
+
+wait : 60-90 seconds for restart
+
+8.check for already created topic is present or not , if present kafka works correctly , we will recover the old message
+if it is not present then we have to create topic again and check for message
+
+9.if topic is present then check for message
+docker exec -it kafka kafka-console-consumer --topic complaint-topic --from-beginning --bootstrap-server localhost:9092
+
+output: FIRST_TEST_MESSAGE
