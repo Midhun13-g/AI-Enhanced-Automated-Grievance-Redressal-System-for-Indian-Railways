@@ -19,6 +19,39 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8081")
 INTERNAL_KEY = os.getenv("BACKEND_INTERNAL_KEY", "railway-internal-key")
 CLASSIFIER_URL = os.getenv("CLASSIFIER_URL", "https://midhun-2542-railwaymodel.hf.space/classify")
 
+SECURITY_KEYWORDS = {
+    "steal",
+    "stole",
+    "stolen",
+    "theft",
+    "thief",
+    "rob",
+    "robbed",
+    "snatch",
+    "snatched",
+    "pickpocket",
+    "pick-pocket",
+    "firecracker",
+    "firecrackers",
+    "weapon",
+    "knife",
+    "gun",
+    "bomb",
+    "explosive",
+    "threat",
+    "threaten",
+    "threatened",
+    "attack",
+    "attacked",
+    "harass",
+    "harassed",
+    "harassment",
+    "molest",
+    "molestation",
+    "assault",
+    "suspicious",
+}
+
 
 class ComplaintData(BaseModel):
     text: str
@@ -56,6 +89,13 @@ def fetch_complaint(complaint_id: int) -> dict:
     return json.loads(body)
 
 
+def infer_department_override(text: str) -> str | None:
+    normalized = text.lower()
+    if any(keyword in normalized for keyword in SECURITY_KEYWORDS):
+        return "Security"
+    return None
+
+
 def classify_text(text: str) -> dict:
     _, body = json_request(CLASSIFIER_URL, method="POST", payload={"text": text})
     payload = json.loads(body)
@@ -64,6 +104,12 @@ def classify_text(text: str) -> dict:
     priority = payload.get("priority")
     if priority is None:
         priority = "low"
+
+    override_department = infer_department_override(text)
+    if override_department is not None:
+        department = override_department
+        priority = "high"
+        payload["overrideReason"] = "security-keyword-match"
 
     return {
         "department": department,
