@@ -43,6 +43,11 @@ Expected containers:
 - `railway-zookeeper`
 - `railway-kafka`
 
+Listener endpoints after startup:
+
+- from your host machine: `localhost:9092`
+- from another Docker container on the same compose network: `railway-kafka:29092`
+
 ## Verify Kafka is running
 
 List topics:
@@ -124,4 +129,10 @@ $env:BACKEND_URL = "http://localhost:8081"
 $env:BACKEND_INTERNAL_KEY = "railway-internal-key"
 $env:CLASSIFIER_URL = "https://midhun-2542-railwaymodel.hf.space/classify"
 uvicorn main:app --reload --port 8000
+```
+
+If you run the AI service inside Docker instead of directly on your machine, use:
+
+```powershell
+$env:KAFKA_BROKER = "railway-kafka:29092"
 ```
