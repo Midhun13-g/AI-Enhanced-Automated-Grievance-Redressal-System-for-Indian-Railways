@@ -66,6 +66,9 @@ public class Complaint {
     @Column(name = "resolved_by_role")
     private String resolvedByRole;
 
+    @Column(name = "rpf_escalated")
+    private Boolean rpfEscalated;
+
     @Column(nullable = false)
     private String status;
 

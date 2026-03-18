@@ -22,6 +22,7 @@ public class ComplaintResponse {
     private String remarks;
     private String resolvedBy;
     private String resolvedByRole;
+    private Boolean rpfEscalated;
     private String aiMetadata;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

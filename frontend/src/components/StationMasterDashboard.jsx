@@ -24,7 +24,6 @@ const StationMasterDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState("Dashboard");
     const [filterStatus, setFilterStatus] = useState("");
-    const [escalatedIds, setEscalatedIds] = useState([]);
     const [activeRemark, setActiveRemark] = useState(null);
     const [remarkInput, setRemarkInput] = useState({});
     const [announcement, setAnnouncement] = useState({ team: "Cleaning", message: "" });
@@ -65,17 +64,17 @@ const StationMasterDashboard = () => {
         API.patch(`/complaints/${id}/status`, { newStatus })
             .then((res) => {
                 setComplaints(c => c.map(comp => comp.id === id ? res.data : comp));
-                if (newStatus === "RESOLVED") {
-                    setEscalatedIds(prev => prev.filter(x => x !== id));
-                }
             })
             .catch(() => { });
     };
 
 
     const handleEscalate = (id) => {
-        handleStatusUpdate(id, "IN_PROGRESS");
-        setEscalatedIds(prev => prev.includes(id) ? prev : [...prev, id]);
+        API.patch(`/complaints/${id}/notify-rpf`)
+            .then((res) => {
+                setComplaints(c => c.map(comp => comp.id === id ? res.data : comp));
+            })
+            .catch(() => { });
     };
 
     const handleAssign = (complaintId, staffUsername) => {
@@ -117,7 +116,7 @@ const StationMasterDashboard = () => {
     };
 
     const filteredComplaints = complaints.filter(c =>
-        filterStatus ? (escalatedIds.includes(c.id) ? "ESCALATED" : c.status) === filterStatus : true
+        filterStatus ? (c.rpfEscalated ? "ESCALATED" : c.status) === filterStatus : true
     );
 
     const isHighEmergency = (complaint) => {
@@ -241,13 +240,13 @@ const StationMasterDashboard = () => {
                     {activeSection === "Dashboard" && (
                         <div>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-                                {[
-                                    { label: "Total Complaints", value: complaints.length, color: "border-teal-500", text: "text-teal-600" },
-                                    { label: "Pending", value: complaints.filter(c => c.status === "PENDING").length, color: "border-red-500", text: "text-red-600" },
-                                    { label: "Resolved", value: complaints.filter(c => c.status === "RESOLVED").length, color: "border-green-500", text: "text-green-600" },
-                                    { label: "Escalated to RPF", value: escalatedIds.length, color: "border-purple-500", text: "text-purple-600" },
-                                    { label: "Active SOS", value: sosComplaints.length, color: "border-orange-500", text: "text-orange-600" },
-                                ].map(s => (
+                                    {[
+                                        { label: "Total Complaints", value: complaints.length, color: "border-teal-500", text: "text-teal-600" },
+                                        { label: "Pending", value: complaints.filter(c => c.status === "PENDING").length, color: "border-red-500", text: "text-red-600" },
+                                        { label: "Resolved", value: complaints.filter(c => c.status === "RESOLVED").length, color: "border-green-500", text: "text-green-600" },
+                                        { label: "Escalated to RPF", value: complaints.filter(c => c.rpfEscalated).length, color: "border-purple-500", text: "text-purple-600" },
+                                        { label: "Active SOS", value: sosComplaints.length, color: "border-orange-500", text: "text-orange-600" },
+                                    ].map(s => (
                                     <div key={s.label} className={`bg-white rounded-xl shadow p-5 border-l-4 ${s.color}`}>
                                         <div className={`text-3xl font-bold ${s.text}`}>{s.value}</div>
                                         <div className="text-gray-500 text-sm mt-1">{s.label}</div>
@@ -263,33 +262,6 @@ const StationMasterDashboard = () => {
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-4">
                                     <div className="bg-teal-500 h-4 rounded-full transition-all" style={{ width: `${resolutionRate}%` }} />
-                                </div>
-                            </div>
-
-                            {/* Station Operations Panel */}
-                            <div className="bg-white rounded-xl shadow p-6 mb-8">
-                                <h3 className="font-bold text-gray-800 mb-4">⚙️ Station Operations Status</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {[
-                                        { key: "platform", label: "Platform", icon: "🛤️" },
-                                        { key: "water", label: "Water / Sanitation", icon: "💧" },
-                                        { key: "electricity", label: "Electricity", icon: "⚡" },
-                                        { key: "maintenance", label: "Maintenance", icon: "🔧" },
-                                    ].map(op => (
-                                        <div key={op.key} className="border rounded-lg p-4">
-                                            <div className="text-2xl mb-1">{op.icon}</div>
-                                            <div className="text-sm font-semibold text-gray-700">{op.label}</div>
-                                            <select
-                                                value={opIssues[op.key]}
-                                                onChange={e => setOpIssues(prev => ({ ...prev, [op.key]: e.target.value }))}
-                                                className={`mt-2 text-xs font-bold rounded px-2 py-1 border-0 outline-none w-full ${opIssues[op.key] === "Normal" ? "bg-green-100 text-green-700" : opIssues[op.key] === "Pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}
-                                            >
-                                                <option value="Normal">Normal</option>
-                                                <option value="Pending">Pending</option>
-                                                <option value="Critical">Critical</option>
-                                            </select>
-                                        </div>
-                                    ))}
                                 </div>
                             </div>
 
@@ -316,7 +288,7 @@ const StationMasterDashboard = () => {
                                                 <tr key={c.id} className="border-b hover:bg-teal-50">
                                                     <td className="py-3 px-4">{c.passengerName}</td>
                                                     <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
-                                                    <td className="py-3 px-4"><StatusBadge status={escalatedIds.includes(c.id) ? "ESCALATED" : c.status} /></td>
+                                                    <td className="py-3 px-4"><StatusBadge status={c.rpfEscalated ? "ESCALATED" : c.status} /></td>
                                                     <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
                                                 </tr>
                                             ))}
@@ -375,7 +347,7 @@ const StationMasterDashboard = () => {
                                         ) : filteredComplaints.length === 0 ? (
                                             <tr><td colSpan="7" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
                                         ) : filteredComplaints.map(c => {
-                                            const isEscalated = escalatedIds.includes(c.id);
+                                            const isEscalated = c.rpfEscalated;
                                             const displayStatus = isEscalated ? "ESCALATED" : c.status;
                                             return (
                                                 <tr key={c.id} className={`border-b ${isEscalated ? "bg-purple-50" : "hover:bg-teal-50"}`}>
@@ -454,7 +426,7 @@ const StationMasterDashboard = () => {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="text-red-600 font-bold text-lg animate-pulse">🚨 SOS</span>
-                                                <StatusBadge status={escalatedIds.includes(c.id) ? "ESCALATED" : c.status} />
+                                                <StatusBadge status={c.rpfEscalated ? "ESCALATED" : c.status} />
                                             </div>
                                             <p className="font-semibold text-gray-800 text-lg">{c.passengerName}</p>
                                             <p className="text-gray-600 mt-1">{c.complaintText}</p>
@@ -584,7 +556,7 @@ const StationMasterDashboard = () => {
                                     {[
                                         { label: "Total Complaints", value: complaints.length, icon: "📋" },
                                         { label: "Resolved", value: complaints.filter(c => c.status === "RESOLVED").length, icon: "✅" },
-                                        { label: "Escalated to RPF", value: escalatedIds.length, icon: "↑" },
+                                        { label: "Escalated to RPF", value: complaints.filter(c => c.rpfEscalated).length, icon: "↑" },
                                         { label: "Pending", value: complaints.filter(c => c.status === "PENDING").length, icon: "⏳" },
                                         { label: "Station Staff", value: staffWithStats.length, icon: "👷" },
                                         { label: "Resolution Rate", value: `${resolutionRate}%`, icon: "📈" },

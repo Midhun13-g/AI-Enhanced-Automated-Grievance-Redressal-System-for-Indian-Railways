@@ -63,6 +63,7 @@ const Dashboard = () => {
                                     <tr>
                                         <th className="py-3 px-4 text-left font-semibold">Complaint</th>
                                         <th className="py-3 px-4 text-left font-semibold">Route</th>
+                                        <th className="py-3 px-4 text-left font-semibold">Train No</th>
                                         <th className="py-3 px-4 text-left font-semibold">Category</th>
                                         <th className="py-3 px-4 text-left font-semibold">Urgency</th>
                                         <th className="py-3 px-4 text-left font-semibold">Status</th>
@@ -71,7 +72,7 @@ const Dashboard = () => {
                                 <tbody>
                                     {complaints.length === 0 ? (
                                         <tr>
-                                            <td colSpan="5" className="py-8 text-center text-gray-500">
+                                            <td colSpan="6" className="py-8 text-center text-gray-500">
                                                 No complaints found. <Link to="/complaints/new" className="text-orange-600 hover:underline">Submit your first grievance</Link>.
                                             </td>
                                         </tr>
@@ -82,6 +83,7 @@ const Dashboard = () => {
                                                 <td className="py-3 px-4 text-sm text-gray-600">
                                                     {(c.previousStation || "N/A")} → {(c.nextStation || "N/A")}
                                                 </td>
+                                                <td className="py-3 px-4 text-sm text-gray-600">{c.trainNumber || "N/A"}</td>
                                                 <td className="py-3 px-4">
                                                     <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
                                                         {c.category || "General"}

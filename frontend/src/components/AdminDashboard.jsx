@@ -74,7 +74,9 @@ const AdminDashboard = () => {
         return normalizeTrain(complaint.trainNumber) === normalizeTrain(trainNumber);
     };
 
-    const rpfComplaints = complaints.filter(c => (matchesSecurityDept(c) || isMedicalForRpf(c)) && trainMatch(c));
+    const rpfComplaints = complaints.filter(c =>
+        (matchesSecurityDept(c) || isMedicalForRpf(c)) && trainMatch(c)
+    );
 
     const filteredComplaints = rpfComplaints.filter(c => {
         const matchStatus = filterStatus ? c.status === filterStatus : true;
@@ -98,7 +100,7 @@ const AdminDashboard = () => {
         const newOnes = sosComplaints.filter(c => !previousIds.has(c.id));
 
         if (newOnes.length > 0) {
-            const sample = newOnes.slice(0, 3).map(c => `#${c.id}`).join(", ");
+            const sample = newOnes.slice(0, 3).map(c => c.passengerName || "Passenger").join(", ");
             const extra = newOnes.length > 3 ? ` +${newOnes.length - 3} more` : "";
             setRpfNotice(`New Security/Emergency alerts: ${sample}${extra}`);
         }
@@ -349,7 +351,6 @@ const AdminDashboard = () => {
                                 <table className="min-w-full text-sm">
                                     <thead className="bg-gray-50 text-gray-600">
                                         <tr>
-                                            <th className="py-3 px-4 text-left">#ID</th>
                                             <th className="py-3 px-4 text-left">Passenger</th>
                                             <th className="py-3 px-4 text-left">Complaint</th>
                                             <th className="py-3 px-4 text-left">Dept</th>
@@ -362,15 +363,16 @@ const AdminDashboard = () => {
                                     </thead>
                                     <tbody>
                                         {loading ? (
-                                            <tr><td colSpan="9" className="py-8 text-center text-gray-400">Loading...</td></tr>
+                                            <tr><td colSpan="8" className="py-8 text-center text-gray-400">Loading...</td></tr>
                                         ) : filteredComplaints.length === 0 ? (
-                                            <tr><td colSpan="9" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
+                                            <tr><td colSpan="8" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
                                         ) : filteredComplaints.map(c => (
-                                            <tr key={c.id} className="border-b hover:bg-orange-50">
-                                                <td className="py-3 px-4 text-orange-600 font-semibold">#{c.id}</td>
+                                            <tr key={c.id} className={`border-b ${getPriority(c.urgencyScore) === "HIGH" ? "bg-red-50 hover:bg-red-100" : "hover:bg-orange-50"}`}>
                                                 <td className="py-3 px-4">{c.passengerName}</td>
                                                 <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
                                                 <td className="py-3 px-4 text-gray-400">{c.department || "—"}</td>
+                                                <td className="py-3 px-4 text-gray-500">{c.trainNumber || "-"}</td>
+                                                <td className="py-3 px-4 text-xs font-semibold text-gray-600">{getPriority(c.urgencyScore)}</td>
                                                 <td className="py-3 px-4"><StatusBadge status={c.status} /></td>
                                                 <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
                                                 <td className="py-3 px-4">
@@ -452,7 +454,6 @@ const AdminDashboard = () => {
                                             <th className="py-3 px-4 text-left">Name</th>
                                             <th className="py-3 px-4 text-left">Badge</th>
                                             <th className="py-3 px-4 text-left">Email</th>
-                                            <th className="py-3 px-4 text-left">Station</th>
                                             <th className="py-3 px-4 text-left">Train No</th>
                                             <th className="py-3 px-4 text-left">Active Cases</th>
                                         </tr>
@@ -463,7 +464,6 @@ const AdminDashboard = () => {
                                                 <td className="py-3 px-4 font-semibold">👮 {o.displayName}</td>
                                                 <td className="py-3 px-4 text-gray-500">{o.badge}</td>
                                                 <td className="py-3 px-4 text-gray-500">{o.email}</td>
-                                                <td className="py-3 px-4 text-gray-500">{o.station}</td>
                                                 <td className="py-3 px-4 text-gray-500">{o.trainNumber}</td>
                                                 <td className="py-3 px-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">{o.activeCases} cases</span></td>
                                             </tr>

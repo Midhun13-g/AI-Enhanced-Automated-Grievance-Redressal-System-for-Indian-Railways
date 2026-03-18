@@ -179,6 +179,7 @@ public class ComplaintService {
                 .trainNumber(request.getTrainNumber())
                 .incidentAt(request.getIncidentAt())
                 .category(category)
+                .rpfEscalated(Boolean.FALSE)
                 .status("PENDING")
                 .urgencyScore(0)
                 .station(station)
@@ -253,6 +254,7 @@ public class ComplaintService {
         if ("RESOLVED".equalsIgnoreCase(request.getNewStatus())) {
             complaint.setResolvedBy(resolveUserDisplayName(user));
             complaint.setResolvedByRole(user.getRole());
+            complaint.setRpfEscalated(Boolean.FALSE);
         } else {
             complaint.setResolvedBy(null);
             complaint.setResolvedByRole(null);
@@ -278,6 +280,29 @@ public class ComplaintService {
     }
 
     @Transactional
+    public ComplaintResponse notifyRpf(Long id, Authentication auth) {
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Complaint not found"));
+        User user = userRepository.findByUsername(auth.getName()).orElseThrow();
+        String oldStatus = complaint.getStatus();
+
+        complaint.setRpfEscalated(Boolean.TRUE);
+        if ("PENDING".equalsIgnoreCase(complaint.getStatus())) {
+            complaint.setStatus("IN_PROGRESS");
+        }
+
+        Complaint updated = complaintRepository.save(complaint);
+        ComplaintHistory history = ComplaintHistory.builder()
+                .complaint(complaint)
+                .oldStatus(oldStatus)
+                .newStatus(updated.getStatus())
+                .updatedBy(user)
+                .build();
+        complaintHistoryRepository.save(history);
+        return toResponse(updated);
+    }
+
+    @Transactional
     public void deleteComplaint(Long id, Authentication auth) {
         if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
             throw new AccessDeniedException("Only super admin can delete complaints");
@@ -300,8 +325,16 @@ public class ComplaintService {
     private ComplaintResponse toResponse(Complaint complaint) {
         ComplaintResponse resp = new ComplaintResponse();
         String department = complaint.getDepartment();
+        String inferredDepartment = inferDepartmentFromText(complaint.getComplaintText());
         if (department == null || department.isBlank() || "GENERAL".equalsIgnoreCase(department) || "General".equalsIgnoreCase(department)) {
-            department = inferDepartmentFromText(complaint.getComplaintText());
+            department = inferredDepartment;
+        } else if (shouldOverrideDepartmentWithInference(department, inferredDepartment)) {
+            department = inferredDepartment;
+        }
+
+        Integer urgencyScore = complaint.getUrgencyScore();
+        if (shouldOverrideDepartmentWithInference(complaint.getDepartment(), inferredDepartment)) {
+            urgencyScore = mapPriorityToUrgency(inferPriorityFromDepartment(department));
         }
 
         resp.setId(complaint.getId());
@@ -309,7 +342,7 @@ public class ComplaintService {
         resp.setPassengerPhone(complaint.getPassengerPhone());
         resp.setComplaintText(complaint.getComplaintText());
         resp.setCategory(department != null ? department : complaint.getCategory());
-        resp.setUrgencyScore(complaint.getUrgencyScore());
+        resp.setUrgencyScore(urgencyScore);
         resp.setStatus(complaint.getStatus());
         resp.setStation(complaint.getStation());
         resp.setPreviousStation(complaint.getPreviousStation());
@@ -321,10 +354,21 @@ public class ComplaintService {
         resp.setRemarks(complaint.getRemarks());
         resp.setResolvedBy(complaint.getResolvedBy());
         resp.setResolvedByRole(complaint.getResolvedByRole());
+        resp.setRpfEscalated(Boolean.TRUE.equals(complaint.getRpfEscalated()));
         resp.setAiMetadata(complaint.getAiMetadata());
         resp.setCreatedAt(complaint.getCreatedAt());
         resp.setUpdatedAt(complaint.getUpdatedAt());
         return resp;
+    }
+
+    private boolean shouldOverrideDepartmentWithInference(String storedDepartment, String inferredDepartment) {
+        if (inferredDepartment == null || inferredDepartment.isBlank()) {
+            return false;
+        }
+        if ("Security".equals(inferredDepartment) || "Medical".equals(inferredDepartment)) {
+            return storedDepartment == null || storedDepartment.isBlank() || !inferredDepartment.equalsIgnoreCase(storedDepartment);
+        }
+        return false;
     }
 
     private void enrichWithAi(Complaint complaint) {

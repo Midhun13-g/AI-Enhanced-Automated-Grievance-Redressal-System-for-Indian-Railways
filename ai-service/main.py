@@ -19,38 +19,41 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8081")
 INTERNAL_KEY = os.getenv("BACKEND_INTERNAL_KEY", "railway-internal-key")
 CLASSIFIER_URL = os.getenv("CLASSIFIER_URL", "https://midhun-2542-railwaymodel.hf.space/classify")
 
-SECURITY_KEYWORDS = {
-    "steal",
-    "stole",
-    "stolen",
-    "theft",
-    "thief",
-    "rob",
-    "robbed",
-    "snatch",
-    "snatched",
-    "pickpocket",
-    "pick-pocket",
-    "firecracker",
-    "firecrackers",
-    "weapon",
-    "knife",
-    "gun",
-    "bomb",
-    "explosive",
-    "threat",
-    "threaten",
-    "threatened",
-    "attack",
-    "attacked",
-    "harass",
-    "harassed",
-    "harassment",
-    "molest",
-    "molestation",
-    "assault",
-    "suspicious",
-}
+DEPARTMENT_KEYWORDS = (
+    ("Security", (
+        "security", "theft", "steal", "stole", "stolen", "thief", "snatch", "snatched",
+        "rob", "robbed", "fight", "harass", "harassed", "harassment", "unsafe", "police",
+        "rpf", "sos", "pickpocket", "pick-pocket", "firecracker", "firecrackers", "weapon",
+        "knife", "gun", "bomb", "explosive", "threat", "threaten", "threatened", "attack",
+        "attacked", "suspicious", "assault", "molest", "molestation"
+    )),
+    ("Medical", (
+        "medical", "doctor", "ambulance", "heart attack", "injury", "blood", "faint",
+        "poison", "poisoning", "first aid", "fever", "collapsed"
+    )),
+    ("Water", (
+        "water", "no water", "drinking", "tap", "toilet water", "flush"
+    )),
+    ("Cleanliness", (
+        "clean", "dirty", "toilet", "restroom", "sanitation", "garbage", "smell",
+        "filthy", "unclean", "washroom", "hygiene"
+    )),
+    ("Catering", (
+        "food", "catering", "meal", "vendor", "pantry", "breakfast", "lunch", "dinner"
+    )),
+    ("Electrical", (
+        "light", "fan", "charging", "socket", "electric", "power", "switchboard", "spark"
+    )),
+    ("Coach", (
+        "coach", "berth", "seat", "window", "door", "ac", "ladder"
+    )),
+    ("Ticketing", (
+        "ticket", "refund", "pnr", "reservation", "booking"
+    )),
+    ("Maintenance", (
+        "repair", "maintenance", "broken", "damage", "damaged", "leak", "leaking", "cracked"
+    )),
+)
 
 
 class ComplaintData(BaseModel):
@@ -89,10 +92,19 @@ def fetch_complaint(complaint_id: int) -> dict:
     return json.loads(body)
 
 
+def infer_priority_for_department(department: str | None) -> str:
+    if department in {"Medical", "Security"}:
+        return "high"
+    if department in {"Electrical", "Coach", "Maintenance", "Water"}:
+        return "medium"
+    return "low"
+
+
 def infer_department_override(text: str) -> str | None:
     normalized = text.lower()
-    if any(keyword in normalized for keyword in SECURITY_KEYWORDS):
-        return "Security"
+    for department, keywords in DEPARTMENT_KEYWORDS:
+        if any(keyword in normalized for keyword in keywords):
+            return department
     return None
 
 
@@ -106,10 +118,11 @@ def classify_text(text: str) -> dict:
         priority = "low"
 
     override_department = infer_department_override(text)
-    if override_department is not None:
+    if override_department is not None and override_department != department:
         department = override_department
-        priority = "high"
-        payload["overrideReason"] = "security-keyword-match"
+        priority = infer_priority_for_department(department)
+        payload["overrideReason"] = "keyword-department-override"
+        payload["overrideDepartment"] = department
 
     return {
         "department": department,
