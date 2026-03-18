@@ -376,7 +376,6 @@ const SuperAdminDashboard = () => {
                                 <table className="min-w-full text-sm">
                                     <thead className="bg-gray-50 text-gray-600">
                                         <tr>
-                                            <th className="py-3 px-4 text-left">#ID</th>
                                             <th className="py-3 px-4 text-left">Passenger</th>
                                             <th className="py-3 px-4 text-left">Complaint</th>
                                             <th className="py-3 px-4 text-left">Department</th>
@@ -390,12 +389,11 @@ const SuperAdminDashboard = () => {
                                     </thead>
                                     <tbody>
                                         {loading ? (
-                                            <tr><td colSpan="10" className="py-8 text-center text-gray-400">Loading...</td></tr>
+                                            <tr><td colSpan="9" className="py-8 text-center text-gray-400">Loading...</td></tr>
                                         ) : filteredComplaints.length === 0 ? (
-                                            <tr><td colSpan="10" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
+                                            <tr><td colSpan="9" className="py-8 text-center text-gray-400">No complaints found.</td></tr>
                                         ) : filteredComplaints.map(c => (
                                             <tr key={c.id} className="border-b hover:bg-purple-50">
-                                                <td className="py-3 px-4 text-purple-600 font-semibold">#{c.id}</td>
                                                 <td className="py-3 px-4">{c.passengerName}</td>
                                                 <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
                                                 <td className="py-3 px-4 text-gray-600">{c.department || c.category || "-"}</td>
