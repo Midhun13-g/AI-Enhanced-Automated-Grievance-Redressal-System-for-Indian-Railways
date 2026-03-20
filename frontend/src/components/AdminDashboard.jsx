@@ -372,7 +372,11 @@ const AdminDashboard = () => {
                                                 <td className="py-3 px-4 max-w-xs truncate">{c.complaintText}</td>
                                                 <td className="py-3 px-4 text-gray-400">{c.department || "—"}</td>
                                                 <td className="py-3 px-4 text-gray-500">{c.trainNumber || "-"}</td>
-                                                <td className="py-3 px-4 text-xs font-semibold text-gray-600">{getPriority(c.urgencyScore)}</td>
+                                                <td className="py-3 px-4">
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${getPriority(c.urgencyScore) === "HIGH" ? "bg-red-100 text-red-700" : getPriority(c.urgencyScore) === "MEDIUM" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600"}`}>
+                                                        {getPriority(c.urgencyScore)}
+                                                    </span>
+                                                </td>
                                                 <td className="py-3 px-4"><StatusBadge status={c.status} /></td>
                                                 <td className="py-3 px-4 text-gray-400">{c.createdAt?.split("T")[0]}</td>
                                                 <td className="py-3 px-4">
