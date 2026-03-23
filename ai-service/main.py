@@ -1,5 +1,6 @@
 import json
 import os
+import socket
 import threading
 import time
 import urllib.error
@@ -18,6 +19,14 @@ KAFKA_GROUP = os.getenv("KAFKA_GROUP_ID", "railway-ml-service")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8081")
 INTERNAL_KEY = os.getenv("BACKEND_INTERNAL_KEY", "railway-internal-key")
 CLASSIFIER_URL = os.getenv("CLASSIFIER_URL", "https://midhun-2542-railwaymodel.hf.space/classify")
+KAFKA_RETRY_INITIAL_SECONDS = int(os.getenv("KAFKA_RETRY_INITIAL_SECONDS", "5"))
+KAFKA_RETRY_MAX_SECONDS = int(os.getenv("KAFKA_RETRY_MAX_SECONDS", "60"))
+
+consumer_state = {
+    "connected": False,
+    "lastError": None,
+    "lastAttemptAt": None,
+}
 
 DEPARTMENT_KEYWORDS = (
     ("Security", (
@@ -167,11 +176,29 @@ def decode_message(message_value: bytes) -> dict:
     }
 
 
+def set_consumer_state(connected: bool, last_error: str | None = None) -> None:
+    consumer_state["connected"] = connected
+    consumer_state["lastError"] = last_error
+    consumer_state["lastAttemptAt"] = int(time.time())
+
+
+def broker_is_reachable() -> bool:
+    host, port_text = KAFKA_BROKER.rsplit(":", 1)
+    with socket.create_connection((host, int(port_text)), timeout=5):
+        return True
+
+
 def consume_loop() -> None:
+    retry_delay = max(1, KAFKA_RETRY_INITIAL_SECONDS)
     while True:
         consumer = None
         try:
-            print(f"Starting Kafka consumer for topic={KAFKA_TOPIC} broker={KAFKA_BROKER} group={KAFKA_GROUP}")
+            set_consumer_state(False)
+            print(
+                f"Starting Kafka consumer for topic={KAFKA_TOPIC} broker={KAFKA_BROKER} "
+                f"group={KAFKA_GROUP}"
+            )
+            broker_is_reachable()
             consumer = KafkaConsumer(
                 KAFKA_TOPIC,
                 bootstrap_servers=KAFKA_BROKER,
@@ -179,6 +206,9 @@ def consume_loop() -> None:
                 auto_offset_reset="earliest",
                 enable_auto_commit=False,
             )
+            retry_delay = max(1, KAFKA_RETRY_INITIAL_SECONDS)
+            set_consumer_state(True)
+            print(f"Kafka consumer connected to broker={KAFKA_BROKER}")
             for message in consumer:
                 try:
                     payload = decode_message(message.value)
@@ -200,14 +230,27 @@ def consume_loop() -> None:
                     print(f"Message processing failed at offset {message.offset}: {exc}")
                     time.sleep(5)
         except urllib.error.HTTPError as exc:
+            set_consumer_state(False, f"HTTPError: {exc.code} {exc.reason}")
             print(f"HTTP request failed: {exc.code} {exc.reason}")
             time.sleep(5)
         except urllib.error.URLError as exc:
+            set_consumer_state(False, f"URLError: {exc}")
             print(f"Network request failed: {exc}")
             time.sleep(5)
+        except OSError as exc:
+            set_consumer_state(False, f"OSError: {exc}")
+            print(
+                f"Kafka broker {KAFKA_BROKER} is not reachable yet: {exc}. "
+                f"Retrying in {retry_delay}s."
+            )
+            time.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, max(retry_delay, KAFKA_RETRY_MAX_SECONDS))
         except Exception as exc:
+            set_consumer_state(False, str(exc))
             print(f"Kafka consumer loop failed: {exc}")
-            time.sleep(5)
+            print(f"Retrying Kafka consumer in {retry_delay}s.")
+            time.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, max(retry_delay, KAFKA_RETRY_MAX_SECONDS))
         finally:
             if consumer is not None:
                 consumer.close()
@@ -226,6 +269,11 @@ def health():
     return {
         "status": "ok",
         "kafkaEnabled": KAFKA_ENABLED,
+        "kafkaConnected": consumer_state["connected"],
+        "kafkaBroker": KAFKA_BROKER,
+        "kafkaGroup": KAFKA_GROUP,
+        "kafkaLastError": consumer_state["lastError"],
+        "kafkaLastAttemptAt": consumer_state["lastAttemptAt"],
         "topic": KAFKA_TOPIC,
         "classifierUrl": CLASSIFIER_URL,
     }
