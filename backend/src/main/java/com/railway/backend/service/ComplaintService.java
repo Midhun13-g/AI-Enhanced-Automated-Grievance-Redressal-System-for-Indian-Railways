@@ -491,7 +491,36 @@ public class ComplaintService {
         }
         String normalized = text.toLowerCase();
 
-        if (containsAny(normalized, "security", "theft", "steal", "snatch", "rob", "fight", "harass", "unsafe", "police", "rpf", "sos")) {
+        if (containsAny(normalized,
+                "security",
+                "theft",
+                "steal",
+                "snatch",
+                "rob",
+                "fight",
+                "harass",
+                "unsafe",
+                "police",
+                "rpf",
+                "sos",
+                "suspicious",
+                "suspicious bag",
+                "unattended bag",
+                "unidentified",
+                "unknown person",
+                "unknown persons",
+                "unauthorized",
+                "trespass",
+                "force open",
+                "breaking open",
+                "threat",
+                "threaten",
+                "threatening",
+                "assault",
+                "abuse",
+                "molest",
+                "drunk passenger",
+                "smoking")) {
             return "Security";
         }
         if (containsAny(normalized, "medical", "doctor", "ambulance", "heart attack", "injury", "blood", "faint", "poison")) {
