@@ -238,7 +238,7 @@ public class ComplaintService {
         complaint.setCategory(department);
         complaint.setUrgencyScore(request.getUrgencyScore() != null
                 ? request.getUrgencyScore()
-                : mapPriorityToUrgency(request.getPriority()));
+                : baselineUrgencyForDepartment(department, request.getPriority()));
         complaint.setAiMetadata(request.getAiMetadata());
         complaintRepository.save(complaint);
     }
@@ -333,8 +333,11 @@ public class ComplaintService {
         }
 
         Integer urgencyScore = complaint.getUrgencyScore();
+        int baselineUrgency = baselineUrgencyForDepartment(department, null);
         if (shouldOverrideDepartmentWithInference(complaint.getDepartment(), inferredDepartment)) {
-            urgencyScore = mapPriorityToUrgency(inferPriorityFromDepartment(department));
+            urgencyScore = baselineUrgency;
+        } else if (urgencyScore == null || urgencyScore < baselineUrgency) {
+            urgencyScore = baselineUrgency;
         }
 
         resp.setId(complaint.getId());
@@ -392,7 +395,7 @@ public class ComplaintService {
             });
             String department = extractDepartment(payload);
             String priority = extractPriority(payload);
-            Integer urgencyScore = mapPriorityToUrgency(priority);
+            Integer urgencyScore = baselineUrgencyForDepartment(department, priority);
 
             if (department != null && !department.isBlank()) {
                 complaint.setDepartment(department);
@@ -419,8 +422,9 @@ public class ComplaintService {
             String inferredDepartment = inferDepartmentFromText(complaint.getComplaintText());
             complaint.setDepartment(inferredDepartment);
             complaint.setCategory(inferredDepartment);
-            if (complaint.getUrgencyScore() == null || complaint.getUrgencyScore() <= 0) {
-                complaint.setUrgencyScore(mapPriorityToUrgency(inferPriorityFromDepartment(inferredDepartment)));
+            int baselineUrgency = baselineUrgencyForDepartment(inferredDepartment, null);
+            if (complaint.getUrgencyScore() == null || complaint.getUrgencyScore() < baselineUrgency) {
+                complaint.setUrgencyScore(baselineUrgency);
             }
         }
     }
@@ -461,6 +465,13 @@ public class ComplaintService {
             return 70;
         }
         return 35;
+    }
+
+    private int baselineUrgencyForDepartment(String department, String priority) {
+        if (priority != null && !priority.isBlank()) {
+            return mapPriorityToUrgency(priority.trim().toLowerCase(Locale.ROOT));
+        }
+        return mapPriorityToUrgency(inferPriorityFromDepartment(department));
     }
 
     private String buildKafkaFailureMetadata(Exception ex) {
